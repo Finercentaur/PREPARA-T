@@ -3,6 +3,7 @@ package com.example.prepara_t
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image // Importar Image para el placeholder de imagen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +33,8 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -56,6 +59,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectDragGestures
+import kotlin.math.abs
+import kotlin.math.sign
+import android.widget.Toast
+import kotlinx.coroutines.delay
 
 // Enum para manejar las diferentes pantallas de la aplicación
 enum class AppScreen {
@@ -97,7 +108,11 @@ enum class AppScreen {
     ACCIDENTES_CARRETEROS, // Nueva pantalla para Accidentes carreteros, ferroviarios y aéreos
     CONCENTRACION_PERSONAS, // Nueva pantalla para Concentración masiva de personas
     TERRORISMO_SABOTAJE, // Nueva pantalla para Terrorismo y sabotaje
-    SOPA_LETRAS_GEOLOGICOS // Pantalla de sopa de letras para geológicos
+    SOPA_LETRAS_GEOLOGICOS, // Pantalla de sopa de letras para geológicos
+    SOPA_LETRAS_HIDROMETEOROLOGICOS, // Pantalla de sopa de letras para hidrometeorológicos
+    SOPA_LETRAS_SOCIO_ORGANIZATIVOS, // Pantalla de sopa de letras para socio-organizativos
+    SOPA_LETRAS_SANITARIO_ECOLOGICO, // Pantalla de sopa de letras para sanitario-ecológico
+    SOPA_LETRAS_QUIMICO_TECNOLOGICO // Pantalla de sopa de letras para químico-tecnológicos
 }
 
 @Composable
@@ -123,223 +138,269 @@ class MainActivity : ComponentActivity() {
                 ) {
                     // Estado mutable para controlar qué pantalla se muestra actualmente
                     var currentScreen by remember { mutableStateOf(AppScreen.HOME) }
+                    // Pila de pantallas para navegación hacia atrás
+                    val screenStack = remember { mutableStateListOf<AppScreen>() }
+                    // Estado para doble toque en HOME
+                    var backPressedTime by remember { mutableStateOf(0L) }
+                    val context = LocalContext.current
+
+                    // BackHandler global
+                    BackHandler {
+                        if (currentScreen == AppScreen.HOME) {
+                            val now = System.currentTimeMillis()
+                            if (now - backPressedTime < 2000) {
+                                // Salir de la app
+                                finish()
+                            } else {
+                                Toast.makeText(context, "Presiona de nuevo para salir", Toast.LENGTH_SHORT).show()
+                                backPressedTime = now
+                            }
+                        } else {
+                            // Navegar hacia atrás en la pila
+                            if (screenStack.isNotEmpty()) {
+                                currentScreen = screenStack.removeAt(screenStack.size - 1)
+                            } else {
+                                currentScreen = AppScreen.HOME
+                            }
+                        }
+                    }
+
+                    // Función para navegar y guardar historial
+                    fun navigateTo(screen: AppScreen) {
+                        if (screen != currentScreen) {
+                            screenStack.add(currentScreen)
+                            currentScreen = screen
+                        }
+                    }
 
                     // Lógica para mostrar la pantalla correcta según el estado
                     when (currentScreen) {
                         AppScreen.HOME -> PantallaInicio(
-                            onNavigateToPostalCode = { currentScreen = AppScreen.POSTAL_CODE_INPUT },
-                            onNavigateToCredits = { currentScreen = AppScreen.CREDITS },
-                            onNavigateToFenomenos = { currentScreen = AppScreen.FENOMENOS }
+                            onNavigateToPostalCode = { navigateTo(AppScreen.POSTAL_CODE_INPUT) },
+                            onNavigateToCredits = { navigateTo(AppScreen.CREDITS) },
+                            onNavigateToFenomenos = { navigateTo(AppScreen.FENOMENOS) }
                         )
                         AppScreen.POSTAL_CODE_INPUT -> PantallaCodigoPostal(
-                            onBackToMenu = { currentScreen = AppScreen.HOME }
+                            onBackToMenu = { navigateTo(AppScreen.HOME) }
                         )
                         AppScreen.CREDITS -> PantallaCreditos(
-                            onBackToMenu = { currentScreen = AppScreen.HOME }
+                            onBackToMenu = { navigateTo(AppScreen.HOME) }
                         )
                         AppScreen.FENOMENOS -> PantallaInicioFenomenos(
-                            onBackToMenu = { currentScreen = AppScreen.HOME },
-                            onNavigateToGeologicos = { currentScreen = AppScreen.GEOLOGICOS },
-                            onNavigateToHidrometeorologicos = { currentScreen = AppScreen.HIDROMETEOROLOGICOS },
-                            onNavigateToQuimicoTecnologicos = { currentScreen = AppScreen.QUIMICO_TECNOLOGICOS },
-                            onNavigateToSanitarioEcologicos = { currentScreen = AppScreen.SANITARIO_ECOLOGICOS },
-                            onNavigateToSocioOrganizativos = { currentScreen = AppScreen.SOCIO_ORGANIZATIVOS_LISTA }
+                            onBackToMenu = { navigateTo(AppScreen.HOME) },
+                            onNavigateToGeologicos = { navigateTo(AppScreen.GEOLOGICOS) },
+                            onNavigateToHidrometeorologicos = { navigateTo(AppScreen.HIDROMETEOROLOGICOS) },
+                            onNavigateToQuimicoTecnologicos = { navigateTo(AppScreen.QUIMICO_TECNOLOGICOS) },
+                            onNavigateToSanitarioEcologicos = { navigateTo(AppScreen.SANITARIO_ECOLOGICOS) },
+                            onNavigateToSocioOrganizativos = { navigateTo(AppScreen.SOCIO_ORGANIZATIVOS_LISTA) }
                         )
                         AppScreen.GEOLOGICOS -> PantallaGeologicos(
-                            onBackToFenomenos = { currentScreen = AppScreen.FENOMENOS },
-                            onActividad = { currentScreen = AppScreen.SOPA_LETRAS_GEOLOGICOS },
-                            onBackToMenu = { currentScreen = AppScreen.HOME },
-                            onNavigateToErupcion = { currentScreen = AppScreen.ERUPCION_VOLCANICA },
-                            onNavigateToSismo = { currentScreen = AppScreen.SISMO },
-                            onNavigateToTsunami = { currentScreen = AppScreen.TSUNAMI },
-                            onNavigateToGrietas = { currentScreen = AppScreen.GRIETAS },
-                            onNavigateToDeslizamiento = { currentScreen = AppScreen.DESLIZAMIENTO_LADERAS },
-                            onNavigateToHundimientos = { currentScreen = AppScreen.HUNDIMIENTOS_SOCAVONES }
+                            onBackToFenomenos = { navigateTo(AppScreen.FENOMENOS) },
+                            onActividad = { navigateTo(AppScreen.SOPA_LETRAS_GEOLOGICOS) },
+                            onBackToMenu = { navigateTo(AppScreen.HOME) },
+                            onNavigateToErupcion = { navigateTo(AppScreen.ERUPCION_VOLCANICA) },
+                            onNavigateToSismo = { navigateTo(AppScreen.SISMO) },
+                            onNavigateToTsunami = { navigateTo(AppScreen.TSUNAMI) },
+                            onNavigateToGrietas = { navigateTo(AppScreen.GRIETAS) },
+                            onNavigateToDeslizamiento = { navigateTo(AppScreen.DESLIZAMIENTO_LADERAS) },
+                            onNavigateToHundimientos = { navigateTo(AppScreen.HUNDIMIENTOS_SOCAVONES) }
                         )
                         AppScreen.ERUPCION_VOLCANICA -> PantallaErupcionVolcanica(
-                            onBack = { currentScreen = AppScreen.GEOLOGICOS },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.SISMO }
+                            onBack = { navigateTo(AppScreen.GEOLOGICOS) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.SISMO) }
                         )
                         AppScreen.SISMO -> PantallaSismo(
-                            onBack = { currentScreen = AppScreen.ERUPCION_VOLCANICA },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.TSUNAMI }
+                            onBack = { navigateTo(AppScreen.ERUPCION_VOLCANICA) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.TSUNAMI) }
                         )
                         AppScreen.TSUNAMI -> PantallaTsunami(
-                            onBack = { currentScreen = AppScreen.SISMO },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.GRIETAS }
+                            onBack = { navigateTo(AppScreen.SISMO) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.GRIETAS) }
                         )
                         AppScreen.GRIETAS -> PantallaGrietas(
-                            onBack = { currentScreen = AppScreen.TSUNAMI },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.DESLIZAMIENTO_LADERAS }
+                            onBack = { navigateTo(AppScreen.TSUNAMI) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.DESLIZAMIENTO_LADERAS) }
                         )
                         AppScreen.DESLIZAMIENTO_LADERAS -> PantallaDeslizamientoLaderas(
-                            onBack = { currentScreen = AppScreen.GRIETAS },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.HUNDIMIENTOS_SOCAVONES }
+                            onBack = { navigateTo(AppScreen.GRIETAS) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.HUNDIMIENTOS_SOCAVONES) }
                         )
                         AppScreen.HUNDIMIENTOS_SOCAVONES -> PantallaHundimientosSocavones(
-                            onBack = { currentScreen = AppScreen.DESLIZAMIENTO_LADERAS },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.GEOLOGICOS }
+                            onBack = { navigateTo(AppScreen.DESLIZAMIENTO_LADERAS) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.GEOLOGICOS) }
                         )
                         AppScreen.HIDROMETEOROLOGICOS -> PantallaRiesgosHidrometeorologicos(
-                            onBack = { currentScreen = AppScreen.FENOMENOS },
-                            onActividad = { /* TODO: Implementar navegación a actividad */ },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNavigate = { pantalla -> currentScreen = pantalla }
+                            onBack = { navigateTo(AppScreen.FENOMENOS) },
+                            onActividad = { navigateTo(AppScreen.SOPA_LETRAS_HIDROMETEOROLOGICOS) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNavigate = { pantalla -> navigateTo(pantalla) }
                         )
                         AppScreen.CICLONES_TROPICALES -> PantallaCiclonesTropicales(
-                            onBack = { currentScreen = AppScreen.HIDROMETEOROLOGICOS },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.INUNDACIONES }
+                            onBack = { navigateTo(AppScreen.HIDROMETEOROLOGICOS) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.INUNDACIONES) }
                         )
                         AppScreen.INUNDACIONES -> PantallaInundaciones(
-                            onBack = { currentScreen = AppScreen.CICLONES_TROPICALES },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.HELADAS }
+                            onBack = { navigateTo(AppScreen.CICLONES_TROPICALES) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.HELADAS) }
                         )
                         AppScreen.HELADAS -> PantallaHeladas(
-                            onBack = { currentScreen = AppScreen.INUNDACIONES },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.NIEBLA }
+                            onBack = { navigateTo(AppScreen.INUNDACIONES) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.NIEBLA) }
                         )
                         AppScreen.NIEBLA -> PantallaNiebla(
-                            onBack = { currentScreen = AppScreen.HELADAS },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.TORMENTAS_ELECTRICAS }
+                            onBack = { navigateTo(AppScreen.HELADAS) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.TORMENTAS_ELECTRICAS) }
                         )
                         AppScreen.TORMENTAS_ELECTRICAS -> PantallaTormentasElectricas(
-                            onBack = { currentScreen = AppScreen.NIEBLA },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.GRANIZO }
+                            onBack = { navigateTo(AppScreen.NIEBLA) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.GRANIZO) }
                         )
                         AppScreen.GRANIZO -> PantallaGranizo(
-                            onBack = { currentScreen = AppScreen.TORMENTAS_ELECTRICAS },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.FRENTE_FRIO }
+                            onBack = { navigateTo(AppScreen.TORMENTAS_ELECTRICAS) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.FRENTE_FRIO) }
                         )
                         AppScreen.FRENTE_FRIO -> PantallaFrenteFrio(
-                            onBack = { currentScreen = AppScreen.GRANIZO },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.SEQUIAS }
+                            onBack = { navigateTo(AppScreen.GRANIZO) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.SEQUIAS) }
                         )
                         AppScreen.SEQUIAS -> PantallaSequias(
-                            onBack = { currentScreen = AppScreen.FRENTE_FRIO },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.HIDROMETEOROLOGICOS }
+                            onBack = { navigateTo(AppScreen.FRENTE_FRIO) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.HIDROMETEOROLOGICOS) }
                         )
                         AppScreen.SOCIO_ORGANIZATIVOS -> PantallaSocioOrganizativos(
-                            onBack = { currentScreen = AppScreen.FENOMENOS },
-                            onMenu = { currentScreen = AppScreen.HOME }
+                            onBack = { navigateTo(AppScreen.FENOMENOS) },
+                            onMenu = { navigateTo(AppScreen.HOME) }
                         )
                         AppScreen.QUIMICO_TECNOLOGICOS -> PantallaRiesgosQuimicoTecnologicos(
-                            onBack = { currentScreen = AppScreen.FENOMENOS },
-                            onActividad = { /* TODO: Implementar navegación a actividad química-tecnológica */ },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNavigate = { currentScreen = it }
+                            onBack = { navigateTo(AppScreen.FENOMENOS) },
+                            onActividad = { navigateTo(AppScreen.SOPA_LETRAS_QUIMICO_TECNOLOGICO) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNavigate = { navigateTo(it) }
                         )
                         AppScreen.ALMACENAMIENTO_COMBUSTIBLES -> PantallaAlmacenamientoCombustibles(
-                            onBack = { currentScreen = AppScreen.QUIMICO_TECNOLOGICOS },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.FUGAS_GAS }
+                            onBack = { navigateTo(AppScreen.QUIMICO_TECNOLOGICOS) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.FUGAS_GAS) }
                         )
                         AppScreen.FUGAS_GAS -> PantallaFugasGas(
-                            onBack = { currentScreen = AppScreen.ALMACENAMIENTO_COMBUSTIBLES },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.RESIDUOS_PELIGROSOS }
+                            onBack = { navigateTo(AppScreen.ALMACENAMIENTO_COMBUSTIBLES) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.RESIDUOS_PELIGROSOS) }
                         )
                         AppScreen.RESIDUOS_PELIGROSOS -> PantallaResiduosPeligrosos(
-                            onBack = { currentScreen = AppScreen.FUGAS_GAS },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.EXPLOSIONES_QT }
+                            onBack = { navigateTo(AppScreen.FUGAS_GAS) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.EXPLOSIONES_QT) }
                         )
                         AppScreen.EXPLOSIONES_QT -> PantallaExplosionesQT(
-                            onBack = { currentScreen = AppScreen.RESIDUOS_PELIGROSOS },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.INCENDIOS_FORESTALES_QT }
+                            onBack = { navigateTo(AppScreen.RESIDUOS_PELIGROSOS) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.INCENDIOS_FORESTALES_QT) }
                         )
                         AppScreen.INCENDIOS_FORESTALES_QT -> PantallaIncendiosForestalesQT(
-                            onBack = { currentScreen = AppScreen.EXPLOSIONES_QT },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.INCENDIOS_URBANOS_QT }
+                            onBack = { navigateTo(AppScreen.EXPLOSIONES_QT) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.INCENDIOS_URBANOS_QT) }
                         )
                         AppScreen.INCENDIOS_URBANOS_QT -> PantallaIncendiosUrbanosQT(
-                            onBack = { currentScreen = AppScreen.INCENDIOS_FORESTALES_QT },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.QUIMICO_TECNOLOGICOS }
+                            onBack = { navigateTo(AppScreen.INCENDIOS_FORESTALES_QT) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.QUIMICO_TECNOLOGICOS) }
                         )
                         AppScreen.SANITARIO_ECOLOGICOS -> PantallaRiesgosSanitarioEcologicos(
-                            onBack = { currentScreen = AppScreen.FENOMENOS },
-                            onActividad = { /* TODO: Implementar navegación a actividad sanitario-ecológica */ },
-                            onMenu = { currentScreen = AppScreen.HOME },
+                            onBack = { navigateTo(AppScreen.FENOMENOS) },
+                            onActividad = { navigateTo(AppScreen.SOPA_LETRAS_SANITARIO_ECOLOGICO) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
                             onNavigate = {
                                 when (it) {
-                                    "Contaminación del aire" -> currentScreen = AppScreen.CONTAMINACION_AIRE
-                                    "Contaminación del agua" -> currentScreen = AppScreen.CONTAMINACION_AGUA
-                                    "Contaminación del suelo" -> currentScreen = AppScreen.CONTAMINACION_SUELO
-                                    "Plagas" -> currentScreen = AppScreen.PLAGAS
-                                    "Epidemias" -> currentScreen = AppScreen.EPIDEMIAS
+                                    "Contaminación del aire" -> navigateTo(AppScreen.CONTAMINACION_AIRE)
+                                    "Contaminación del agua" -> navigateTo(AppScreen.CONTAMINACION_AGUA)
+                                    "Contaminación del suelo" -> navigateTo(AppScreen.CONTAMINACION_SUELO)
+                                    "Plagas" -> navigateTo(AppScreen.PLAGAS)
+                                    "Epidemias" -> navigateTo(AppScreen.EPIDEMIAS)
                                 }
                             }
                         )
                         AppScreen.CONTAMINACION_AIRE -> PantallaContaminacionAire(
-                            onBack = { currentScreen = AppScreen.SANITARIO_ECOLOGICOS },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.CONTAMINACION_AGUA }
+                            onBack = { navigateTo(AppScreen.SANITARIO_ECOLOGICOS) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.CONTAMINACION_AGUA) }
                         )
                         AppScreen.CONTAMINACION_AGUA -> PantallaContaminacionAgua(
-                            onBack = { currentScreen = AppScreen.CONTAMINACION_AIRE },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.CONTAMINACION_SUELO }
+                            onBack = { navigateTo(AppScreen.CONTAMINACION_AIRE) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.CONTAMINACION_SUELO) }
                         )
                         AppScreen.CONTAMINACION_SUELO -> PantallaContaminacionSuelo(
-                            onBack = { currentScreen = AppScreen.CONTAMINACION_AGUA },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.PLAGAS }
+                            onBack = { navigateTo(AppScreen.CONTAMINACION_AGUA) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.PLAGAS) }
                         )
                         AppScreen.PLAGAS -> PantallaPlagas(
-                            onBack = { currentScreen = AppScreen.CONTAMINACION_SUELO },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.EPIDEMIAS }
+                            onBack = { navigateTo(AppScreen.CONTAMINACION_SUELO) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.EPIDEMIAS) }
                         )
                         AppScreen.EPIDEMIAS -> PantallaEpidemias(
-                            onBack = { currentScreen = AppScreen.PLAGAS },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.SANITARIO_ECOLOGICOS }
+                            onBack = { navigateTo(AppScreen.PLAGAS) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.SANITARIO_ECOLOGICOS) }
                         )
                         AppScreen.SOCIO_ORGANIZATIVOS_LISTA -> PantallaRiesgosSocioOrganizativos(
-                            onBack = { currentScreen = AppScreen.FENOMENOS },
-                            onActividad = { /* TODO: Implementar navegación a actividad socio-organizativa */ },
-                            onMenu = { currentScreen = AppScreen.HOME },
+                            onBack = { navigateTo(AppScreen.FENOMENOS) },
+                            onActividad = { navigateTo(AppScreen.SOPA_LETRAS_SOCIO_ORGANIZATIVOS) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
                             onNavigate = {
                                 when (it) {
-                                    "Accidentes carreteros, ferroviarios y aéreos" -> currentScreen = AppScreen.ACCIDENTES_CARRETEROS
-                                    "Concentración masiva de personas" -> currentScreen = AppScreen.CONCENTRACION_PERSONAS
-                                    "Terrorismo y sabotaje" -> currentScreen = AppScreen.TERRORISMO_SABOTAJE
+                                    "Accidentes carreteros, ferroviarios y aéreos" -> navigateTo(AppScreen.ACCIDENTES_CARRETEROS)
+                                    "Concentración masiva de personas" -> navigateTo(AppScreen.CONCENTRACION_PERSONAS)
+                                    "Terrorismo y sabotaje" -> navigateTo(AppScreen.TERRORISMO_SABOTAJE)
                                 }
                             }
                         )
                         AppScreen.ACCIDENTES_CARRETEROS -> PantallaAccidentesCarreteros(
-                            onBack = { currentScreen = AppScreen.SOCIO_ORGANIZATIVOS_LISTA },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.CONCENTRACION_PERSONAS }
+                            onBack = { navigateTo(AppScreen.SOCIO_ORGANIZATIVOS_LISTA) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.CONCENTRACION_PERSONAS) }
                         )
                         AppScreen.CONCENTRACION_PERSONAS -> PantallaConcentracionPersonas(
-                            onBack = { currentScreen = AppScreen.ACCIDENTES_CARRETEROS },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.TERRORISMO_SABOTAJE }
+                            onBack = { navigateTo(AppScreen.ACCIDENTES_CARRETEROS) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.TERRORISMO_SABOTAJE) }
                         )
                         AppScreen.TERRORISMO_SABOTAJE -> PantallaTerrorismoSabotaje(
-                            onBack = { currentScreen = AppScreen.CONCENTRACION_PERSONAS },
-                            onMenu = { currentScreen = AppScreen.HOME },
-                            onNext = { currentScreen = AppScreen.SOCIO_ORGANIZATIVOS_LISTA }
+                            onBack = { navigateTo(AppScreen.CONCENTRACION_PERSONAS) },
+                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onNext = { navigateTo(AppScreen.SOCIO_ORGANIZATIVOS_LISTA) }
                         )
                         AppScreen.SOPA_LETRAS_GEOLOGICOS -> PantallaSopaLetrasGeologicos(
-                            onBack = { currentScreen = AppScreen.GEOLOGICOS }
+                            onBack = { navigateTo(AppScreen.GEOLOGICOS) }
+                        )
+                        AppScreen.SOPA_LETRAS_HIDROMETEOROLOGICOS -> PantallaSopaLetrasHidrometeorologicos(
+                            onBack = { navigateTo(AppScreen.HIDROMETEOROLOGICOS) }
+                        )
+                        AppScreen.SOPA_LETRAS_SOCIO_ORGANIZATIVOS -> PantallaSopaLetrasSocioOrganizativos(
+                            onBack = { navigateTo(AppScreen.SOCIO_ORGANIZATIVOS_LISTA) }
+                        )
+                        AppScreen.SOPA_LETRAS_SANITARIO_ECOLOGICO -> PantallaSopaLetrasSanitarioEcologico(
+                            onBack = { navigateTo(AppScreen.SANITARIO_ECOLOGICOS) }
+                        )
+                        AppScreen.SOPA_LETRAS_QUIMICO_TECNOLOGICO -> PantallaSopaLetrasQuimicoTec(
+                            onBack = { navigateTo(AppScreen.QUIMICO_TECNOLOGICOS) }
                         )
                     }
                 }
@@ -365,6 +426,7 @@ fun PantallaInicio(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -436,6 +498,7 @@ fun PantallaCodigoPostal(onBackToMenu: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -550,6 +613,7 @@ fun PantallaCreditos(onBackToMenu: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -654,6 +718,7 @@ fun PantallaInicioFenomenos(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -777,6 +842,7 @@ fun PantallaInicioFenomenos(
                         .fillMaxWidth()
                         .height(56.dp)
                 )
+                Spacer(modifier = Modifier.height(64.dp)) // Más espacio para que el botón no quede tapado
             }
             Spacer(modifier = Modifier.weight(1f))
         }
@@ -824,6 +890,7 @@ fun PantallaGeologicos(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -897,7 +964,7 @@ fun PantallaGeologicos(
                 onClick = onActividad,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -1120,8 +1187,8 @@ fun BotonMenuConLogoGrande(
                     modifier = Modifier.size(36.dp)
                 )
             }
-            Spacer(modifier = Modifier.widthIn(min = 16.dp))
-            Text(text = texto, fontSize = 18.sp, maxLines = 2)
+            Spacer(modifier = Modifier.widthIn(min = 8.dp)) // Reducido de 16dp a 8dp
+            Text(text = texto, fontSize = 16.sp, maxLines = 1)
         }
     }
 }
@@ -1216,7 +1283,7 @@ fun PantallaErupcionVolcanica(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -1324,7 +1391,7 @@ fun PantallaSismo(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -1432,7 +1499,7 @@ fun PantallaTsunami(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -1540,7 +1607,7 @@ fun PantallaGrietas(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -1648,7 +1715,7 @@ fun PantallaDeslizamientoLaderas(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -1756,7 +1823,7 @@ fun PantallaHundimientosSocavones(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -1796,6 +1863,7 @@ fun PantallaRiesgosHidrometeorologicos(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -1828,14 +1896,12 @@ fun PantallaRiesgosHidrometeorologicos(
             Text("[Aquí irá el video]", color = Color.DarkGray, fontSize = 14.sp)
         }
         Spacer(modifier = Modifier.height(16.dp))
-        // Reemplazo: LazyColumn desplazable para las opciones
-        androidx.compose.foundation.lazy.LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
+        // Ahora usamos un Column normal para las opciones
+        Column(
+            modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            itemsIndexed(opciones) { idx, texto ->
+            opciones.forEachIndexed { idx, texto ->
                 OpcionHidrometeorologica(
                     texto = texto,
                     checked = checkedList[idx],
@@ -1886,7 +1952,7 @@ fun PantallaRiesgosHidrometeorologicos(
                 onClick = onActividad,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -2014,6 +2080,7 @@ fun PantallaCiclonesTropicales(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -2094,7 +2161,7 @@ fun PantallaCiclonesTropicales(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -2117,6 +2184,7 @@ fun PantallaInundaciones(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> U
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -2197,7 +2265,7 @@ fun PantallaInundaciones(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> U
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -2246,6 +2314,7 @@ fun PantallaTormentasElectricas(onBack: () -> Unit, onMenu: () -> Unit, onNext: 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -2326,7 +2395,7 @@ fun PantallaTormentasElectricas(onBack: () -> Unit, onMenu: () -> Unit, onNext: 
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -2349,6 +2418,7 @@ fun PantallaGranizo(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -2429,7 +2499,7 @@ fun PantallaGranizo(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) 
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -2452,6 +2522,7 @@ fun PantallaFrenteFrio(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Uni
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -2532,7 +2603,7 @@ fun PantallaFrenteFrio(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Uni
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -2576,6 +2647,7 @@ fun PantallaInfoHidromet(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -2660,7 +2732,7 @@ fun PantallaInfoHidromet(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -2698,6 +2770,7 @@ fun PantallaRiesgosQuimicoTecnologicos(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -2726,12 +2799,12 @@ fun PantallaRiesgosQuimicoTecnologicos(
             videoResId = R.raw.fenomenoquimicotec
         )
         Spacer(modifier = Modifier.height(16.dp))
-        // Lista de opciones: las primeras 4 fijas, las 2 últimas con scroll
+        // Lista de opciones: todas en un solo Column (sin LazyColumn)
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            opciones.take(4).forEachIndexed { idx, texto ->
+            opciones.forEachIndexed { idx, texto ->
                 OpcionQuimicoTecnologico(
                     texto = texto,
                     checked = checkedList[idx],
@@ -2742,33 +2815,12 @@ fun PantallaRiesgosQuimicoTecnologicos(
                             1 -> onNavigate(AppScreen.FUGAS_GAS)
                             2 -> onNavigate(AppScreen.RESIDUOS_PELIGROSOS)
                             3 -> onNavigate(AppScreen.EXPLOSIONES_QT)
+                            4 -> onNavigate(AppScreen.INCENDIOS_FORESTALES_QT)
+                            5 -> onNavigate(AppScreen.INCENDIOS_URBANOS_QT)
                         }
                     }
                 )
                 Spacer(modifier = Modifier.height(10.dp))
-            }
-            // Scroll solo para las dos últimas opciones
-            androidx.compose.foundation.lazy.LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 100.dp), // Altura menor para forzar el scroll y dejar espacio a los botones
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                itemsIndexed(opciones.takeLast(2)) { idx, texto ->
-                    val realIdx = idx + 4
-                    OpcionQuimicoTecnologico(
-                        texto = texto,
-                        checked = checkedList[realIdx],
-                        onCheckedChange = { checkedList[realIdx] = it },
-                        onClick = {
-                            when (realIdx) {
-                                4 -> onNavigate(AppScreen.INCENDIOS_FORESTALES_QT)
-                                5 -> onNavigate(AppScreen.INCENDIOS_URBANOS_QT)
-                            }
-                        }
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                }
             }
         }
         Spacer(modifier = Modifier.weight(1f))
@@ -2798,7 +2850,7 @@ fun PantallaRiesgosQuimicoTecnologicos(
                 onClick = onActividad,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -2933,6 +2985,7 @@ fun PantallaAlmacenamientoCombustibles(onBack: () -> Unit, onMenu: () -> Unit, o
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -3013,7 +3066,7 @@ fun PantallaAlmacenamientoCombustibles(onBack: () -> Unit, onMenu: () -> Unit, o
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -3036,6 +3089,7 @@ fun PantallaFugasGas(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit)
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -3116,7 +3170,7 @@ fun PantallaFugasGas(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit)
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -3139,6 +3193,7 @@ fun PantallaResiduosPeligrosos(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -3219,7 +3274,7 @@ fun PantallaResiduosPeligrosos(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -3242,6 +3297,7 @@ fun PantallaExplosionesQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -3322,7 +3378,7 @@ fun PantallaExplosionesQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> 
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -3345,6 +3401,7 @@ fun PantallaIncendiosForestalesQT(onBack: () -> Unit, onMenu: () -> Unit, onNext
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -3425,7 +3482,7 @@ fun PantallaIncendiosForestalesQT(onBack: () -> Unit, onMenu: () -> Unit, onNext
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -3448,6 +3505,7 @@ fun PantallaIncendiosUrbanosQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -3528,7 +3586,7 @@ fun PantallaIncendiosUrbanosQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -3565,6 +3623,7 @@ fun PantallaRiesgosSanitarioEcologicos(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -3635,7 +3694,7 @@ fun PantallaRiesgosSanitarioEcologicos(
                 onClick = onActividad,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -3816,6 +3875,7 @@ fun PantallaInfoSanitarioEco(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -3898,7 +3958,7 @@ fun PantallaInfoSanitarioEco(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -3933,6 +3993,7 @@ fun PantallaRiesgosSocioOrganizativos(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -4003,7 +4064,7 @@ fun PantallaRiesgosSocioOrganizativos(
                 onClick = onActividad,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -4153,6 +4214,7 @@ fun PantallaInfoSocioOrg(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -4235,7 +4297,7 @@ fun PantallaInfoSocioOrg(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE91E63),
+                    containerColor = Color(0xFF1976D2),
                     contentColor = Color.White
                 ),
                 modifier = Modifier
@@ -4317,20 +4379,131 @@ fun SopaLetrasScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Sopa de letras: Fenómenos Geológicos",
+            text = "Sopa de letras:",
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 12.dp)
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
         )
-        // Matriz de letras
-        for (fila in matriz) {
+        Text(
+            text = "Fenómenos Geológicos",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            textAlign = TextAlign.Center
+        )
+
+        // Estados para selección y palabras encontradas
+        val seleccion = remember { mutableStateListOf<Pair<Int, Int>>() }
+        val encontradas = remember { mutableStateListOf<String>() }
+        val posicionesEncontradas = remember { mutableStateListOf<List<Pair<Int, Int>>>() }
+        var inicio by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+        var fin by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+        var seleccionando by remember { mutableStateOf(false) }
+
+        // Función para obtener la palabra seleccionada y sus posiciones
+        fun palabraSeleccionadaYPosiciones(): Pair<String, List<Pair<Int, Int>>> {
+            if (inicio == null || fin == null) return "" to emptyList()
+            val (i0, j0) = inicio!!
+            val (i1, j1) = fin!!
+            val di = (i1 - i0).coerceIn(-1, 1)
+            val dj = (j1 - j0).coerceIn(-1, 1)
+            val len = maxOf(kotlin.math.abs(i1 - i0), kotlin.math.abs(j1 - j0)) + 1
+            val sb = StringBuilder()
+            val posiciones = mutableListOf<Pair<Int, Int>>()
+            for (k in 0 until len) {
+                val ni = i0 + k * di
+                val nj = j0 + k * dj
+                if (ni in matriz.indices && nj in matriz[0].indices) {
+                    sb.append(matriz[ni][nj])
+                    posiciones.add(ni to nj)
+                }
+            }
+            return sb.toString().uppercase() to posiciones
+        }
+
+        // Matriz de letras con interacción drag
+        for ((i, fila) in matriz.withIndex()) {
             Row {
-                for (letra in fila) {
+                for ((j, letra) in fila.withIndex()) {
+                    val pos = i to j
+                    val seleccionado = seleccion.contains(pos)
+                    val subrayado = posicionesEncontradas.any { lista -> pos in lista }
                     Box(
                         modifier = Modifier
                             .size(28.dp)
-                            .background(Color(0xFFE0E0E0), RoundedCornerShape(4.dp))
-                            .padding(2.dp),
+                            .background(
+                                when {
+                                    seleccionado -> Color(0xFF90CAF9) // Azul claro si está seleccionando
+                                    subrayado -> Color(0xFF1976D2) // Azul fuerte si la palabra fue encontrada
+                                    else -> Color(0xFFE0E0E0)
+                                },
+                                RoundedCornerShape(4.dp)
+                            )
+                            .padding(2.dp)
+                            .pointerInput(Unit) {
+                                detectDragGestures(
+                                    onDragStart = {
+                                        inicio = pos
+                                        fin = pos
+                                        seleccion.clear()
+                                        seleccion.add(pos)
+                                        seleccionando = true
+                                    },
+                                    onDrag = { change, _ ->
+                                        if (inicio != null) {
+                                            val localPos = change.position
+                                            val cellSize = 62f // Ajustado para sensibilidad óptima
+                                            val j1 = (localPos.x / cellSize).toInt().coerceIn(0, matriz[0].size - 1)
+                                            val i1 = (localPos.y / cellSize).toInt().coerceIn(0, matriz.size - 1)
+                                            val (i0, j0) = inicio!!
+                                            // Priorizar horizontal, luego vertical
+                                            val dx = j1 - j0
+                                            val dy = i1 - i0
+                                            val absDx = abs(dx)
+                                            val absDy = abs(dy)
+                                            val di: Int
+                                            val dj: Int
+                                            val len: Int
+                                            if (absDx > 0) {
+                                                di = 0
+                                                dj = if (dx > 0) 1 else -1
+                                                len = absDx + 1
+                                            } else if (absDy > 0) {
+                                                di = if (dy > 0) 1 else -1
+                                                dj = 0
+                                                len = absDy + 1
+                                            } else {
+                                                di = 0
+                                                dj = 0
+                                                len = 1
+                                            }
+                                            seleccion.clear()
+                                            for (k in 0 until len) {
+                                                val ni = i0 + k * di
+                                                val nj = j0 + k * dj
+                                                if (ni in matriz.indices && nj in matriz[0].indices) {
+                                                    seleccion.add(Pair(ni, nj))
+                                                }
+                                            }
+                                            fin = Pair(i0 + (len - 1) * di, j0 + (len - 1) * dj)
+                                        }
+                                    },
+                                    onDragEnd = {
+                                        seleccionando = false
+                                        val (palabra, posiciones) = palabraSeleccionadaYPosiciones()
+                                        if (palabra in palabras && palabra !in encontradas) {
+                                            encontradas.add(palabra)
+                                            posicionesEncontradas.add(posiciones)
+                                        }
+                                        seleccion.clear()
+                                    },
+                                    onDragCancel = {
+                                        seleccionando = false
+                                        seleccion.clear()
+                                    }
+                                )
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(text = letra.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold)
@@ -4347,10 +4520,325 @@ fun SopaLetrasScreen(
             horizontalAlignment = Alignment.Start
         ) {
             for (palabra in palabras) {
-                Text(text = palabra, fontSize = 16.sp)
+                val tachada = palabra in encontradas
+                Text(
+                    text = palabra,
+                    fontSize = 16.sp,
+                    textDecoration = if (tachada) TextDecoration.LineThrough else TextDecoration.None,
+                    color = if (tachada) Color.Gray else Color.Black
+                )
             }
         }
+        // Contador de palabras encontradas
+        Text(
+            text = "Palabras encontradas: ${encontradas.size} de ${palabras.size}",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color(0xFF1976D2),
+            modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
+        )
         Spacer(modifier = Modifier.weight(1f))
         Button(onClick = onBack) { Text("Regresar") }
     }
+}
+
+// --- Pantalla de Sopa de Letras para Fenómenos Hidrometeorológicos ---
+@Composable
+fun PantallaSopaLetrasHidrometeorologicos(
+    onBack: () -> Unit
+) {
+    // Matriz de la sopa de letras (10x10) solo con las 7 palabras seleccionadas
+    val matriz = listOf(
+        listOf('H','E','L','A','D','A','S','Q','W','E'), // HELADAS
+        listOf('S','E','Q','U','I','A','S','A','S','D'), // SEQUIAS
+        listOf('H','U','R','A','C','A','N','E','S','F'), // HURACANES
+        listOf('X','B','M','P','L','O','P','Q','G','H'),
+        listOf('N','Y','V','E','H','C','D','N','Ñ','J'),
+        listOf('I','G','R','A','N','I','Z','O','K','L'), // GRANIZO
+        listOf('F','R','I','O','S','U','T','O','P','A'), // FRIOS
+        listOf('U','T','N','I','E','B','L','A','B','C'), // NIEBLA
+        listOf('A','B','C','D','E','F','G','H','I','J'),
+        listOf('T','O','R','M','E','N','T','A','S','S')  // TORMENTAS
+    )
+    val palabras = listOf(
+        "GRANIZO", "HELADAS", "HURACANES", "NIEBLA", "SEQUIAS", "TORMENTAS", "FRIOS"
+    )
+    SopaLetrasScreen(
+        matriz = matriz,
+        palabras = palabras,
+        onBack = onBack,
+        titulo = "Sopa de letras:",
+        subtitulo = "Fenómenos Hidrometeorológicos"
+    )
+}
+
+// Modificar SopaLetrasScreen para aceptar título y subtítulo opcionales
+@Composable
+fun SopaLetrasScreen(
+    matriz: List<List<Char>>,
+    palabras: List<String>,
+    onBack: () -> Unit,
+    titulo: String = "Sopa de letras:",
+    subtitulo: String = "Fenómenos Geológicos"
+) {
+    // Aquí irá la lógica de selección, validación y tachado
+    // Por ahora, solo muestro la matriz y la lista de palabras
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = titulo,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = subtitulo,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            textAlign = TextAlign.Center
+        )
+
+        // Estados para selección y palabras encontradas
+        val seleccion = remember { mutableStateListOf<Pair<Int, Int>>() }
+        val encontradas = remember { mutableStateListOf<String>() }
+        val posicionesEncontradas = remember { mutableStateListOf<List<Pair<Int, Int>>>() }
+        var inicio by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+        var fin by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+        var seleccionando by remember { mutableStateOf(false) }
+
+        // Función para obtener la palabra seleccionada y sus posiciones
+        fun palabraSeleccionadaYPosiciones(): Pair<String, List<Pair<Int, Int>>> {
+            if (inicio == null || fin == null) return "" to emptyList()
+            val (i0, j0) = inicio!!
+            val (i1, j1) = fin!!
+            val di = (i1 - i0).coerceIn(-1, 1)
+            val dj = (j1 - j0).coerceIn(-1, 1)
+            val len = maxOf(kotlin.math.abs(i1 - i0), kotlin.math.abs(j1 - j0)) + 1
+            val sb = StringBuilder()
+            val posiciones = mutableListOf<Pair<Int, Int>>()
+            for (k in 0 until len) {
+                val ni = i0 + k * di
+                val nj = j0 + k * dj
+                if (ni in matriz.indices && nj in matriz[0].indices) {
+                    sb.append(matriz[ni][nj])
+                    posiciones.add(ni to nj)
+                }
+            }
+            return sb.toString().uppercase() to posiciones
+        }
+
+        // Matriz de letras con interacción drag
+        for ((i, fila) in matriz.withIndex()) {
+            Row {
+                for ((j, letra) in fila.withIndex()) {
+                    val pos = i to j
+                    val seleccionado = seleccion.contains(pos)
+                    val subrayado = posicionesEncontradas.any { lista -> pos in lista }
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .background(
+                                when {
+                                    seleccionado -> Color(0xFF90CAF9) // Azul claro si está seleccionando
+                                    subrayado -> Color(0xFF1976D2) // Azul fuerte si la palabra fue encontrada
+                                    else -> Color(0xFFE0E0E0)
+                                },
+                                RoundedCornerShape(4.dp)
+                            )
+                            .padding(2.dp)
+                            .pointerInput(Unit) {
+                                detectDragGestures(
+                                    onDragStart = {
+                                        inicio = pos
+                                        fin = pos
+                                        seleccion.clear()
+                                        seleccion.add(pos)
+                                        seleccionando = true
+                                    },
+                                    onDrag = { change, _ ->
+                                        if (inicio != null) {
+                                            val localPos = change.position
+                                            val cellSize = 62f // Ajustado para sensibilidad óptima
+                                            val j1 = (localPos.x / cellSize).toInt().coerceIn(0, matriz[0].size - 1)
+                                            val i1 = (localPos.y / cellSize).toInt().coerceIn(0, matriz.size - 1)
+                                            val (i0, j0) = inicio!!
+                                            // Priorizar horizontal, luego vertical
+                                            val dx = j1 - j0
+                                            val dy = i1 - i0
+                                            val absDx = abs(dx)
+                                            val absDy = abs(dy)
+                                            val di: Int
+                                            val dj: Int
+                                            val len: Int
+                                            if (absDx > 0) {
+                                                di = 0
+                                                dj = if (dx > 0) 1 else -1
+                                                len = absDx + 1
+                                            } else if (absDy > 0) {
+                                                di = if (dy > 0) 1 else -1
+                                                dj = 0
+                                                len = absDy + 1
+                                            } else {
+                                                di = 0
+                                                dj = 0
+                                                len = 1
+                                            }
+                                            seleccion.clear()
+                                            for (k in 0 until len) {
+                                                val ni = i0 + k * di
+                                                val nj = j0 + k * dj
+                                                if (ni in matriz.indices && nj in matriz[0].indices) {
+                                                    seleccion.add(Pair(ni, nj))
+                                                }
+                                            }
+                                            fin = Pair(i0 + (len - 1) * di, j0 + (len - 1) * dj)
+                                        }
+                                    },
+                                    onDragEnd = {
+                                        seleccionando = false
+                                        val (palabra, posiciones) = palabraSeleccionadaYPosiciones()
+                                        if (palabra in palabras && palabra !in encontradas) {
+                                            encontradas.add(palabra)
+                                            posicionesEncontradas.add(posiciones)
+                                        }
+                                        seleccion.clear()
+                                    },
+                                    onDragCancel = {
+                                        seleccionando = false
+                                        seleccion.clear()
+                                    }
+                                )
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = letra.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.size(2.dp))
+                }
+            }
+            Spacer(modifier = Modifier.height(2.dp))
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("Lista de palabras:", fontWeight = FontWeight.SemiBold)
+        Column(
+            modifier = Modifier.padding(top = 8.dp),
+            horizontalAlignment = Alignment.Start
+        ) {
+            for (palabra in palabras) {
+                val tachada = palabra in encontradas
+                Text(
+                    text = palabra,
+                    fontSize = 16.sp,
+                    textDecoration = if (tachada) TextDecoration.LineThrough else TextDecoration.None,
+                    color = if (tachada) Color.Gray else Color.Black
+                )
+            }
+        }
+        // Contador de palabras encontradas
+        Text(
+            text = "Palabras encontradas: ${encontradas.size} de ${palabras.size}",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color(0xFF1976D2),
+            modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        Button(onClick = onBack) { Text("Regresar") }
+    }
+}
+
+// --- Pantalla de Sopa de Letras para Fenómenos Socio-Organizativos ---
+@Composable
+fun PantallaSopaLetrasSocioOrganizativos(
+    onBack: () -> Unit
+) {
+    // Matriz de la sopa de letras (10x10) exactamente como en la imagen proporcionada, agregando MASIVO en la fila 6
+    val matriz = listOf(
+        listOf('M','C','A','R','R','E','T','E','R','O'),
+        listOf('K','Á','J','Y','S','S','F','X','M','T'),
+        listOf('P','E','R','S','O','N','A','S','S','Q'),
+        listOf('S','A','B','O','T','A','J','E','S','N'),
+        listOf('G','M','G','S','O','C','I','O','M','V'),
+        listOf('J','J','Ñ','X','M','Ú','A','M','V','Q'),
+        listOf('M','A','S','I','V','O','R','Ñ','Ó','Á'), // MASIVO en horizontal
+        listOf('X','G','T','S','A','E','R','E','O','U'),
+        listOf('T','E','R','R','O','R','I','S','M','O'),
+        listOf('R','A','C','C','I','D','E','N','T','E')
+    )
+    val palabras = listOf(
+        "ACCIDENTE", "AEREO", "CARRETERO", "MASIVO", "PERSONAS", "SABOTAJE", "SOCIO", "TERRORISMO"
+    )
+    SopaLetrasScreen(
+        matriz = matriz,
+        palabras = palabras,
+        onBack = onBack,
+        titulo = "Sopa de letras:",
+        subtitulo = "Fenómenos Socio-Organizativos"
+    )
+}
+
+// --- Pantalla de Sopa de Letras para Fenómenos Sanitario-Ecológicos ---
+@Composable
+fun PantallaSopaLetrasSanitarioEcologico(
+    onBack: () -> Unit
+) {
+    // Matriz de la sopa de letras (10x10) con SUELO y ECOLOGICOS en horizontal y la última fila igual
+    val matriz = listOf(
+        listOf('S','U','E','L','O','V','S','Í','R','O'), // SUELO horizontal
+        listOf('U','S','Z','L','D','H','U','S','É','C'),
+        listOf('E','C','O','L','O','G','I','C','O','S'), // ECOLOGICOS horizontal
+        listOf('Ú','P','L','A','G','A','S','Y','L','O'),
+        listOf('N','N','Q','M','T','G','X','C','E','G'),
+        listOf('S','A','N','I','T','A','R','I','O','G'),
+        listOf('M','O','N','A','I','R','E','Ñ','Q','O'),
+        listOf('E','P','I','D','E','M','I','A','S','S'),
+        listOf('Ñ','F','M','X','Ú','A','G','U','A','S'),
+        listOf('Y','Ü','P','Ñ','M','U','Í','S','K','L') // Última fila igual
+    )
+    val palabras = listOf(
+        "AGUA", "AIRE", "ECOLOGICOS", "EPIDEMIAS", "PLAGAS", "SANITARIO", "SUELO"
+    )
+    SopaLetrasScreen(
+        matriz = matriz,
+        palabras = palabras,
+        onBack = onBack,
+        titulo = "Sopa de letras:",
+        subtitulo = "Fenómenos Sanitario-Ecológicos"
+    )
+}
+
+// --- Pantalla de Sopa de Letras para Químico-Tecnológicos ---
+@Composable
+fun PantallaSopaLetrasQuimicoTec(
+    onBack: () -> Unit
+) {
+    // Matriz de la sopa de letras (10x10) ajustada: sin TRANSPORTE, URBANOS corregido, INCENDIOS añadido
+    val matriz = listOf(
+        listOf('F','R','E','S','I','D','U','O','S','N'), // RESIDUOS
+        listOf('O','O','F','U','G','A','S','É','É','I'), // FUGAS
+        listOf('U','R','B','A','N','O','S','T','E','O'), // URBANOS (U normal)
+        listOf('F','N','N','E','Ú','C','D','H','Ñ','C'),
+        listOf('E','X','P','L','O','S','I','O','N','S'), // EXPLOSION
+        listOf('I','N','C','E','N','D','I','O','S','Q'), // INCENDIOS
+        listOf('H','L','M','X','R','É','A','H','Ú','D'),
+        listOf('D','C','H','Q','J','A','J','L','K','I'),
+        listOf('D','E','R','R','A','M','E','S','E','O'), // DERRAMES
+        listOf('P','E','L','I','G','R','O','S','O','S')  // PELIGROSOS
+    )
+    val palabras = listOf(
+        "DERRAMES", "FORESTALES", "FUGAS", "INCENDIOS", "PELIGROSOS", "RESIDUOS", "URBANOS", "EXPLOSION"
+    )
+    SopaLetrasScreen(
+        matriz = matriz,
+        palabras = palabras,
+        onBack = onBack,
+        titulo = "Sopa de letras:",
+        subtitulo = "Fenómenos Químico-Tecnológicos"
+    )
 }
