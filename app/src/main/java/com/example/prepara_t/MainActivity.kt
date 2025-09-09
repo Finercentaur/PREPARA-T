@@ -1,11 +1,14 @@
 package com.example.prepara_t
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Image // Importar Image para el placeholder de imagen
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,17 +18,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size // Importar size para el placeholder de imagen
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField // Importar OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults // Importar OutlinedTextFieldDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -33,40 +40,26 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.res.painterResource
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import android.widget.VideoView
-import android.widget.MediaController
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectDragGestures
 import kotlin.math.abs
-import kotlin.math.sign
-import android.widget.Toast
-import kotlinx.coroutines.delay
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.foundation.layout.width
 
 // Enum para manejar las diferentes pantallas de la aplicación
 enum class AppScreen {
@@ -115,14 +108,39 @@ enum class AppScreen {
     SOPA_LETRAS_QUIMICO_TECNOLOGICO // Pantalla de sopa de letras para químico-tecnológicos
 }
 
+enum class AppTheme {
+    LIGHT, DARK
+}
+
 @Composable
-fun PREPARATTheme(content: @Composable () -> Unit) {
+fun PREPARATTheme(
+    isDarkTheme: Boolean = false,
+    content: @Composable () -> Unit
+) {
+    val lightColorScheme = lightColorScheme(
+        primary = Color(0xFF2196F3),
+        secondary = Color(0xFF03A9F4),
+        surface = Color.White,
+        onSurface = Color.Black,
+        surfaceVariant = Color(0xFFF0F0F0),
+        onSurfaceVariant = Color(0xFF424242),
+        background = Color.White,
+        onBackground = Color.Black
+    )
+    
+    val darkColorScheme = darkColorScheme(
+        primary = Color(0xFF2196F3),
+        secondary = Color(0xFF03A9F4),
+        surface = Color(0xFF424242), // Gris medio para fondo
+        onSurface = Color.White,
+        surfaceVariant = Color(0xFF616161), // Gris más claro para botones
+        onSurfaceVariant = Color.White,
+        background = Color(0xFF424242),
+        onBackground = Color.White
+    )
+    
     MaterialTheme(
-        colorScheme = MaterialTheme.colorScheme.copy(
-            primary = Color(0xFF2196F3),
-            secondary = Color(0xFF03A9F4),
-            background = Color.White
-        ),
+        colorScheme = if (isDarkTheme) darkColorScheme else lightColorScheme,
         content = content
     )
 }
@@ -131,7 +149,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            PREPARATTheme { // Aplica el tema definido en tu proyecto
+            // Estado para controlar el tema (modo claro por defecto)
+            var isDarkTheme by remember { mutableStateOf(false) }
+            
+            PREPARATTheme(isDarkTheme = isDarkTheme) { // Aplica el tema definido en tu proyecto
                 Surface(
                     modifier = Modifier.fillMaxSize(), // La superficie ocupa toda la pantalla
                     color = MaterialTheme.colorScheme.background // Usa el color de fondo del tema
@@ -141,7 +162,7 @@ class MainActivity : ComponentActivity() {
                     // Pila de pantallas para navegación hacia atrás
                     val screenStack = remember { mutableStateListOf<AppScreen>() }
                     // Estado para doble toque en HOME
-                    var backPressedTime by remember { mutableStateOf(0L) }
+                    var backPressedTime by remember { mutableLongStateOf(0L) }
                     val context = LocalContext.current
 
                     // BackHandler global
@@ -157,10 +178,10 @@ class MainActivity : ComponentActivity() {
                             }
                         } else {
                             // Navegar hacia atrás en la pila
-                            if (screenStack.isNotEmpty()) {
-                                currentScreen = screenStack.removeAt(screenStack.size - 1)
+                            currentScreen = if (screenStack.isNotEmpty()) {
+                                screenStack.removeAt(screenStack.size - 1)
                             } else {
-                                currentScreen = AppScreen.HOME
+                                AppScreen.HOME
                             }
                         }
                     }
@@ -178,13 +199,17 @@ class MainActivity : ComponentActivity() {
                         AppScreen.HOME -> PantallaInicio(
                             onNavigateToPostalCode = { navigateTo(AppScreen.POSTAL_CODE_INPUT) },
                             onNavigateToCredits = { navigateTo(AppScreen.CREDITS) },
-                            onNavigateToFenomenos = { navigateTo(AppScreen.FENOMENOS) }
+                            onNavigateToFenomenos = { navigateTo(AppScreen.FENOMENOS) },
+                            isDarkTheme = isDarkTheme,
+                            onToggleTheme = { isDarkTheme = !isDarkTheme }
                         )
                         AppScreen.POSTAL_CODE_INPUT -> PantallaCodigoPostal(
                             onBackToMenu = { navigateTo(AppScreen.HOME) }
                         )
                         AppScreen.CREDITS -> PantallaCreditos(
-                            onBackToMenu = { navigateTo(AppScreen.HOME) }
+                            onBackToMenu = { navigateTo(AppScreen.HOME) },
+                            isDarkTheme = isDarkTheme,
+                            onToggleTheme = { isDarkTheme = !isDarkTheme }
                         )
                         AppScreen.FENOMENOS -> PantallaInicioFenomenos(
                             onBackToMenu = { navigateTo(AppScreen.HOME) },
@@ -421,7 +446,9 @@ fun PantallaInicio(
     modifier: Modifier = Modifier,
     onNavigateToPostalCode: () -> Unit,
     onNavigateToCredits: () -> Unit,
-    onNavigateToFenomenos: () -> Unit
+    onNavigateToFenomenos: () -> Unit,
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -435,7 +462,7 @@ fun PantallaInicio(
             text = "Fenómenos naturales y antrópicos",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -451,7 +478,7 @@ fun PantallaInicio(
             buttonModifier = Modifier
                 .widthIn(min = 280.dp) // Ancho mínimo del botón
                 .height(80.dp), // Altura del botón
-            backgroundColor = Color(0xFFF0F0F0) // Color de fondo gris claro
+            backgroundColor = MaterialTheme.colorScheme.surfaceVariant // Color de fondo adaptativo
         )
 
         // Espacio entre el botón "Inicio" y "Código postal"
@@ -465,7 +492,7 @@ fun PantallaInicio(
             buttonModifier = Modifier
                 .widthIn(min = 280.dp)
                 .height(60.dp),
-            backgroundColor = Color(0xFFF0F0F0)
+            backgroundColor = MaterialTheme.colorScheme.surfaceVariant
         )
 
         // Espacio entre el botón "Código postal" y "Créditos"
@@ -479,8 +506,24 @@ fun PantallaInicio(
             buttonModifier = Modifier
                 .widthIn(min = 280.dp)
                 .height(60.dp),
-            backgroundColor = Color(0xFFF0F0F0)
+            backgroundColor = MaterialTheme.colorScheme.surfaceVariant
         )
+
+        // Espacio y botón para alternar tema
+        Spacer(modifier = Modifier.height(24.dp))
+        Button(
+            onClick = onToggleTheme,
+            modifier = Modifier
+                .widthIn(min = 280.dp)
+                .height(56.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ),
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Text(if (isDarkTheme) "Modo Claro" else "Modo Oscuro")
+        }
     }
 }
 
@@ -507,7 +550,7 @@ fun PantallaCodigoPostal(onBackToMenu: () -> Unit) {
                 text = "Fenómenos naturales y antrópicos",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
             )
@@ -523,7 +566,7 @@ fun PantallaCodigoPostal(onBackToMenu: () -> Unit) {
                 Text(
                     text = "🏠",
                     fontSize = 48.sp,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
             }
@@ -542,9 +585,9 @@ fun PantallaCodigoPostal(onBackToMenu: () -> Unit) {
                     .height(60.dp),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color(0xFFF0F0F0),
-                    unfocusedContainerColor = Color(0xFFF0F0F0),
-                    disabledContainerColor = Color(0xFFF0F0F0),
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                     focusedBorderColor = if (mostrarError) Color.Red else Color.Transparent,
                     unfocusedBorderColor = if (mostrarError) Color.Red else Color.Transparent,
                     disabledBorderColor = Color.Transparent,
@@ -587,7 +630,7 @@ fun PantallaCodigoPostal(onBackToMenu: () -> Unit) {
                 buttonModifier = Modifier
                     .widthIn(min = 280.dp)
                     .height(60.dp),
-                backgroundColor = Color(0xFFF0F0F0)
+                backgroundColor = MaterialTheme.colorScheme.surfaceVariant
             )
         }
 
@@ -598,8 +641,8 @@ fun PantallaCodigoPostal(onBackToMenu: () -> Unit) {
                 .padding(16.dp),
             shape = RoundedCornerShape(8.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFF0F0F0),
-                contentColor = Color.Black
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurface
             ),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
         ) {
@@ -609,51 +652,22 @@ fun PantallaCodigoPostal(onBackToMenu: () -> Unit) {
 }
 
 @Composable
-fun PantallaCreditos(onBackToMenu: () -> Unit) {
+fun PantallaCreditos(
+    onBackToMenu: () -> Unit,
+    isDarkTheme: Boolean = false,
+    onToggleTheme: () -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Placeholder para el logo de la izquierda
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .background(Color.LightGray, shape = RoundedCornerShape(8.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Logo IPN", fontSize = 12.sp, color = Color.DarkGray, textAlign = TextAlign.Center)
-            }
-            // Placeholder para el logo de la derecha
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .background(Color.LightGray, shape = RoundedCornerShape(8.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Logo ESIA", fontSize = 12.sp, color = Color.DarkGray, textAlign = TextAlign.Center)
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(200.dp))
         Text(
             text = "Sección de Estudios de Posgrado e\nInvestigación",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Normal,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Proyecto SIP 20230221",
             fontSize = 18.sp,
             fontWeight = FontWeight.Normal,
             textAlign = TextAlign.Center,
@@ -677,27 +691,33 @@ fun PantallaCreditos(onBackToMenu: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Elis Antonio Aguilar Rios | BEIFI\n" +
-                    "Martín Cruz Muñoz | BEIFI\n" +
-                    "Ernesto García Mendoza | Servicio Social\n" +
-                    "Guillermo Ángeles Herrera | Servicio Social\n" +
-                    "Kevin Heras Romero | Servicio Social\n" +
-                    "José Carlos Saldívar Valdéz | Servicio Social\n" +
-                    "Diana Vázquez López | BEIFI\n" +
-                    "Roberto Del Olmo Mendoza | Prácticas Profesionales",
+            text = "Elis Antonio Aguilar Rios\n" +
+                    "Martín Cruz Muñoz\n" +
+                    "Ernesto García Mendoza\n" +
+                    "Guillermo Ángeles Herrera\n" +
+                    "Kevin Heras Romero\n" +
+                    "José Carlos Saldívar Valdéz\n" +
+                    "Diana Vázquez López\n" +
+                    "Roberto Del Olmo Mendoza\n" +
+                    "Joshua Olvera Cruz\n" +
+                    "Victor Joohvan Veraza García",
             fontSize = 15.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.weight(1f))
+        
+        // Botón para cambiar tema (movido al menú principal)
+        
+        // Botón para regresar al menú
         Button(
             onClick = onBackToMenu,
             modifier = Modifier
                 .widthIn(min = 200.dp)
                 .height(50.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFF0F0F0),
-                contentColor = Color.Black
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurface
             )
         ) {
             Text("Regresar al menú")
@@ -722,43 +742,33 @@ fun PantallaInicioFenomenos(
                 .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(28.dp))
             Text(
                 text = "Fenómenos",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(16.dp))
-            // Placeholder para el video
+            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            // Descripción de fenómeno
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
-                    .height(140.dp)
-                    .background(Color.LightGray, shape = RoundedCornerShape(12.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("[Aquí irá el video]", color = Color.DarkGray, fontSize = 14.sp)
-            }
-            Spacer(modifier = Modifier.height(24.dp))
-            // Pregunta
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.85f)
-                    .background(Color(0xFFF5F5F5), shape = RoundedCornerShape(12.dp))
-                    .padding(vertical = 12.dp, horizontal = 8.dp),
+                    .background(MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(12.dp))
+                    .padding(vertical = 12.dp, horizontal = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "¿Qué tipo de fenómeno identificas en tu entorno?",
-                    fontSize = 18.sp,
-                    color = Color.Black,
-                    textAlign = TextAlign.Center
+                    text = "Un fenómeno es cualquier evento o proceso que ocurre en la naturaleza o en la sociedad y que puede tener un impacto significativo en el medio ambiente, las personas o las estructuras. Los fenómenos pueden ser:",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Justify
                 )
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             // --- Nueva distribución en una sola columna ---
             Column(
                 modifier = Modifier.fillMaxWidth(0.8f),
@@ -768,18 +778,28 @@ fun PantallaInicioFenomenos(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color.White, shape = RoundedCornerShape(16.dp))
-                        .padding(vertical = 20.dp),
+                        .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp))
+                        .padding(vertical = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "De origen Natural",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black,
+                        color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center
                     )
                 }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Los fenómenos naturales son eventos que ocurren por procesos naturales de la Tierra, sin intervención humana.",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Justify,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 2.dp)
+                )
                 Spacer(modifier = Modifier.height(16.dp))
                 BotonMenuConLogoGrande(
                     texto = "Geológico",
@@ -798,24 +818,34 @@ fun PantallaInicioFenomenos(
                         .fillMaxWidth()
                         .height(56.dp)
                 )
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 // Título Antrópico
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color.White, shape = RoundedCornerShape(16.dp))
-                        .padding(vertical = 20.dp),
+                        .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp))
+                        .padding(vertical = 12.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "De origen Antrópico",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black,
+                        color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center
                     )
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Los fenómenos antrópicos son eventos causados directa o indirectamente por la actividad humana.",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Justify,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 2.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 BotonMenuConLogoGrande(
                     texto = "Químico-Tecnológicos",
                     onClick = onNavigateToQuimicoTecnologicos,
@@ -854,8 +884,8 @@ fun PantallaInicioFenomenos(
                 .padding(16.dp),
             shape = RoundedCornerShape(8.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFF0F0F0),
-                contentColor = Color.Black
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurface
             ),
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
         ) {
@@ -894,11 +924,12 @@ fun PantallaGeologicos(
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Spacer(modifier = Modifier.height(32.dp)) // Más espacio arriba
         Text(
             text = "Fenómenos Geológicos",
             fontSize = 30.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Start
         )
@@ -906,7 +937,7 @@ fun PantallaGeologicos(
         Text(
             text = "Los fenómenos geológicos son los que causan mayores afectaciones naturales y se clasifican en internos, externos y por intervención humana.",
             fontSize = 16.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Start
         )
@@ -946,8 +977,8 @@ fun PantallaGeologicos(
                 onClick = onBackToFenomenos,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 120.dp)
@@ -964,8 +995,8 @@ fun PantallaGeologicos(
                 onClick = onActividad,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 120.dp)
@@ -982,8 +1013,8 @@ fun PantallaGeologicos(
                 onClick = onBackToMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 120.dp)
@@ -1037,6 +1068,7 @@ fun VideoPlayerExo(
             PlayerView(ctx).apply {
                 player = exoPlayer
                 useController = true
+                setBackgroundColor(android.graphics.Color.TRANSPARENT)
                 layoutParams = android.view.ViewGroup.LayoutParams(
                     android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                     android.view.ViewGroup.LayoutParams.MATCH_PARENT
@@ -1061,7 +1093,7 @@ fun OpcionGeologica(
             .clickable(enabled = onClick != null) { onClick?.invoke() },
         shape = RoundedCornerShape(16.dp),
         shadowElevation = 4.dp,
-        color = Color.White
+        color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier
@@ -1075,52 +1107,62 @@ fun OpcionGeologica(
                     .size(40.dp),
                 contentAlignment = Alignment.Center
             ) {
-                if (texto == "Erupción volcánica") {
-                    Image(
-                        painter = painterResource(id = R.drawable.erupcion),
-                        contentDescription = "Erupción volcánica",
-                        modifier = Modifier.size(36.dp)
-                    )
-                } else if (texto == "Sismo") {
-                    Image(
-                        painter = painterResource(id = R.drawable.sismo),
-                        contentDescription = "Sismo",
-                        modifier = Modifier.size(36.dp)
-                    )
-                } else if (texto == "Tsunami") {
-                    Image(
-                        painter = painterResource(id = R.drawable.tsunami),
-                        contentDescription = "Tsunami",
-                        modifier = Modifier.size(36.dp)
-                    )
-                } else if (texto == "Grietas") {
-                    Image(
-                        painter = painterResource(id = R.drawable.grietas),
-                        contentDescription = "Grietas",
-                        modifier = Modifier.size(36.dp)
-                    )
-                } else if (texto == "Deslizamiento de laderas") {
-                    Image(
-                        painter = painterResource(id = R.drawable.movimiento_ladera),
-                        contentDescription = "Deslizamiento de laderas",
-                        modifier = Modifier.size(36.dp)
-                    )
-                } else if (texto == "Hundimientos y socavones") {
-                    Image(
-                        painter = painterResource(id = R.drawable.hundimiento),
-                        contentDescription = "Hundimientos y socavones",
-                        modifier = Modifier.size(36.dp)
-                    )
+                when (texto) {
+                    "Erupción volcánica" -> {
+                        Image(
+                            painter = painterResource(id = R.drawable.erupcion),
+                            contentDescription = "Erupción volcánica",
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+                    "Sismo" -> {
+                        Image(
+                            painter = painterResource(id = R.drawable.sismo),
+                            contentDescription = "Sismo",
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+                    "Tsunami" -> {
+                        Image(
+                            painter = painterResource(id = R.drawable.tsunami),
+                            contentDescription = "Tsunami",
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+                    "Grietas" -> {
+                        Image(
+                            painter = painterResource(id = R.drawable.grietas),
+                            contentDescription = "Grietas",
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+                    "Deslizamiento de laderas" -> {
+                        Image(
+                            painter = painterResource(id = R.drawable.movimiento_ladera),
+                            contentDescription = "Deslizamiento de laderas",
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+                    "Hundimientos y socavones" -> {
+                        Image(
+                            painter = painterResource(id = R.drawable.hundimiento),
+                            contentDescription = "Hundimientos y socavones",
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
                 }
             }
-            Spacer(modifier = Modifier.size(2.dp))
+
+            Spacer(modifier = Modifier.width(12.dp))
+
             Text(
                 text = texto,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
+
             Checkbox(
                 checked = checked,
                 onCheckedChange = onCheckedChange
@@ -1145,7 +1187,7 @@ fun BotonMenu(
         shape = RoundedCornerShape(8.dp), // Esquinas redondeadas
         colors = ButtonDefaults.buttonColors(
             containerColor = backgroundColor, // Color de fondo del botón
-            contentColor = Color.Black // Color del texto del botón
+                    contentColor = MaterialTheme.colorScheme.onSurface // Color del texto del botón
         ),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp) // Sombra
     ) {
@@ -1166,8 +1208,8 @@ fun BotonMenuConLogoGrande(
             .widthIn(min = 220.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color.White,
-            contentColor = Color.Black
+            containerColor = MaterialTheme.colorScheme.surface,
+                                contentColor = MaterialTheme.colorScheme.onSurface
         ),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
     ) {
@@ -1188,7 +1230,7 @@ fun BotonMenuConLogoGrande(
                 )
             }
             Spacer(modifier = Modifier.widthIn(min = 8.dp)) // Reducido de 16dp a 8dp
-            Text(text = texto, fontSize = 16.sp, maxLines = 1)
+            Text(text = texto, fontSize = 16.sp, maxLines = 1, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -1212,7 +1254,7 @@ fun PantallaErupcionVolcanica(
             Text(
                 text = "Fenómenos Geológicos",
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -1247,8 +1289,8 @@ fun PantallaErupcionVolcanica(
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -1265,8 +1307,8 @@ fun PantallaErupcionVolcanica(
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -1283,8 +1325,8 @@ fun PantallaErupcionVolcanica(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -1320,7 +1362,7 @@ fun PantallaSismo(
             Text(
                 text = "Fenómenos Geológicos",
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -1355,8 +1397,8 @@ fun PantallaSismo(
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -1373,8 +1415,8 @@ fun PantallaSismo(
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -1391,8 +1433,8 @@ fun PantallaSismo(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -1428,7 +1470,7 @@ fun PantallaTsunami(
             Text(
                 text = "Fenómenos Geológicos",
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -1463,8 +1505,8 @@ fun PantallaTsunami(
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -1481,8 +1523,8 @@ fun PantallaTsunami(
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -1499,8 +1541,8 @@ fun PantallaTsunami(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -1536,7 +1578,7 @@ fun PantallaGrietas(
             Text(
                 text = "Fenómenos Geológicos",
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -1571,8 +1613,8 @@ fun PantallaGrietas(
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -1589,8 +1631,8 @@ fun PantallaGrietas(
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -1607,8 +1649,8 @@ fun PantallaGrietas(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -1644,7 +1686,7 @@ fun PantallaDeslizamientoLaderas(
             Text(
                 text = "Fenómenos Geológicos",
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -1679,8 +1721,8 @@ fun PantallaDeslizamientoLaderas(
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -1697,8 +1739,8 @@ fun PantallaDeslizamientoLaderas(
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -1715,8 +1757,8 @@ fun PantallaDeslizamientoLaderas(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -1752,7 +1794,7 @@ fun PantallaHundimientosSocavones(
             Text(
                 text = "Fenómenos Geológicos",
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -1787,8 +1829,8 @@ fun PantallaHundimientosSocavones(
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -1805,8 +1847,8 @@ fun PantallaHundimientosSocavones(
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -1823,8 +1865,8 @@ fun PantallaHundimientosSocavones(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -1872,7 +1914,7 @@ fun PantallaRiesgosHidrometeorologicos(
             text = "Fenómenos Hidrometeorológicos",
             fontSize = 30.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Start
         )
@@ -1880,21 +1922,18 @@ fun PantallaRiesgosHidrometeorologicos(
         Text(
             text = "Los fenómenos hidrometeorológicos son agentes perturbadores originados por fenómenos atmosféricos naturales que pueden generar afectaciones en diversas regiones del territorio.",
             fontSize = 16.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Start
         )
         Spacer(modifier = Modifier.height(16.dp))
-        // Placeholder para el video
-        Box(
+        // Video de fenómenos hidrometeorológicos
+        VideoPlayerExo(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(140.dp)
-                .background(Color.LightGray, shape = RoundedCornerShape(12.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("[Aquí irá el video]", color = Color.DarkGray, fontSize = 14.sp)
-        }
+                .height(200.dp),
+            videoResId = R.raw.fenomenohidro
+        )
         Spacer(modifier = Modifier.height(16.dp))
         // Ahora usamos un Column normal para las opciones
         Column(
@@ -1934,8 +1973,8 @@ fun PantallaRiesgosHidrometeorologicos(
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 120.dp)
@@ -1952,8 +1991,8 @@ fun PantallaRiesgosHidrometeorologicos(
                 onClick = onActividad,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 120.dp)
@@ -1970,8 +2009,8 @@ fun PantallaRiesgosHidrometeorologicos(
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 120.dp)
@@ -2002,7 +2041,7 @@ fun OpcionHidrometeorologica(
             .clickable(enabled = onClick != null) { onClick?.invoke() },
         shape = RoundedCornerShape(16.dp),
         shadowElevation = 4.dp,
-        color = Color.White
+        color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier
@@ -2064,7 +2103,7 @@ fun OpcionHidrometeorologica(
                 text = texto,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
             Checkbox(
@@ -2088,7 +2127,7 @@ fun PantallaCiclonesTropicales(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
         Text(
             text = "Fenómenos Hidrometeorológicos",
             fontSize = 18.sp,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -2097,7 +2136,7 @@ fun PantallaCiclonesTropicales(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
             text = "Ciclones tropicales / Huracanes",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -2105,7 +2144,7 @@ fun PantallaCiclonesTropicales(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
         Text(
             text = "Los ciclones tropicales son fenómenos naturales poderosos que se forman sobre aguas cálidas. Se clasifican como depresiones tropicales, tormentas tropicales, huracanes y huracanes extremos.",
             fontSize = 17.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -2125,8 +2164,8 @@ fun PantallaCiclonesTropicales(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -2143,8 +2182,8 @@ fun PantallaCiclonesTropicales(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -2161,8 +2200,8 @@ fun PantallaCiclonesTropicales(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -2192,7 +2231,7 @@ fun PantallaInundaciones(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> U
         Text(
             text = "Fenómenos Hidrometeorológicos",
             fontSize = 18.sp,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -2201,7 +2240,7 @@ fun PantallaInundaciones(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> U
             text = "Inundaciones",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -2209,7 +2248,7 @@ fun PantallaInundaciones(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> U
         Text(
             text = "Una inundación es un evento que aumenta el nivel del agua en ríos o mares, afectando áreas habitualmente secas y causando daños en población, agricultura, ganadería e infraestructura.",
             fontSize = 17.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -2229,8 +2268,8 @@ fun PantallaInundaciones(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> U
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -2247,8 +2286,8 @@ fun PantallaInundaciones(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> U
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -2265,8 +2304,8 @@ fun PantallaInundaciones(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> U
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -2292,7 +2331,8 @@ fun PantallaHeladas(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) 
         videoPlaceholder = "[Aquí irá el video de heladas]",
         onBack = onBack,
         onMenu = onMenu,
-        onNext = onNext
+        onNext = onNext,
+        videoResId = R.raw.fhheladas
     )
 }
 
@@ -2305,7 +2345,8 @@ fun PantallaNiebla(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
         videoPlaceholder = "[Aquí irá el video de niebla]",
         onBack = onBack,
         onMenu = onMenu,
-        onNext = onNext
+        onNext = onNext,
+        videoResId = R.raw.fhneblina
     )
 }
 
@@ -2322,7 +2363,7 @@ fun PantallaTormentasElectricas(onBack: () -> Unit, onMenu: () -> Unit, onNext: 
         Text(
             text = "Fenómenos Hidrometeorológicos",
             fontSize = 18.sp,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -2331,7 +2372,7 @@ fun PantallaTormentasElectricas(onBack: () -> Unit, onMenu: () -> Unit, onNext: 
             text = "Tormentas eléctricas",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -2339,7 +2380,7 @@ fun PantallaTormentasElectricas(onBack: () -> Unit, onMenu: () -> Unit, onNext: 
         Text(
             text = "Las tormentas eléctricas son descargas eléctricas bruscas de electricidad atmosférica que se manifiestan por un resplandor breve.",
             fontSize = 17.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -2359,8 +2400,8 @@ fun PantallaTormentasElectricas(onBack: () -> Unit, onMenu: () -> Unit, onNext: 
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -2377,8 +2418,8 @@ fun PantallaTormentasElectricas(onBack: () -> Unit, onMenu: () -> Unit, onNext: 
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -2395,8 +2436,8 @@ fun PantallaTormentasElectricas(onBack: () -> Unit, onMenu: () -> Unit, onNext: 
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -2426,7 +2467,7 @@ fun PantallaGranizo(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) 
         Text(
             text = "Fenómenos Hidrometeorológicos",
             fontSize = 18.sp,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -2435,7 +2476,7 @@ fun PantallaGranizo(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) 
             text = "Granizo",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -2443,7 +2484,7 @@ fun PantallaGranizo(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) 
         Text(
             text = "El granizo es un tipo de precipitación en forma de piedras de hielo y se forma en las tormentas severas y pueden ser destructivas.",
             fontSize = 17.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -2463,8 +2504,8 @@ fun PantallaGranizo(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) 
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -2481,8 +2522,8 @@ fun PantallaGranizo(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) 
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -2499,8 +2540,8 @@ fun PantallaGranizo(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) 
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -2530,7 +2571,7 @@ fun PantallaFrenteFrio(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Uni
         Text(
             text = "Fenómenos Hidrometeorológicos",
             fontSize = 18.sp,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -2539,7 +2580,7 @@ fun PantallaFrenteFrio(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Uni
             text = "Frente frío",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -2547,7 +2588,7 @@ fun PantallaFrenteFrio(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Uni
         Text(
             text = "Los frentes fríos son el choque de dos masas de aire, una fría y una cálida, impulsados por una masa de aire frío a una alta velocidad.",
             fontSize = 17.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -2567,8 +2608,8 @@ fun PantallaFrenteFrio(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Uni
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -2585,8 +2626,8 @@ fun PantallaFrenteFrio(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Uni
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -2603,8 +2644,8 @@ fun PantallaFrenteFrio(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Uni
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -2630,7 +2671,8 @@ fun PantallaSequias(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) 
         videoPlaceholder = "[Aquí irá el video de sequías]",
         onBack = onBack,
         onMenu = onMenu,
-        onNext = onNext
+        onNext = onNext,
+        videoResId = R.raw.fhsequia
     )
 }
 
@@ -2642,7 +2684,8 @@ fun PantallaInfoHidromet(
     videoPlaceholder: String,
     onBack: () -> Unit,
     onMenu: () -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    videoResId: Int? = null
 ) {
     Column(
         modifier = Modifier
@@ -2655,7 +2698,7 @@ fun PantallaInfoHidromet(
         Text(
             text = subtitulo,
             fontSize = 18.sp,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -2664,7 +2707,7 @@ fun PantallaInfoHidromet(
             text = titulo,
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -2672,20 +2715,17 @@ fun PantallaInfoHidromet(
         Text(
             text = descripcion,
             fontSize = 17.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(32.dp)) // Más espacio antes del video
-        // Placeholder para el video
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(180.dp)
-                .background(Color.LightGray, shape = RoundedCornerShape(12.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(videoPlaceholder, color = Color.DarkGray, fontSize = 14.sp)
+        // Video player
+        if (videoResId != null) {
+            VideoPlayerExo(
+                modifier = Modifier.fillMaxWidth().height(200.dp),
+                videoResId = videoResId
+            )
         }
         Spacer(modifier = Modifier.weight(1f))
         Row(
@@ -2696,8 +2736,8 @@ fun PantallaInfoHidromet(
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -2714,8 +2754,8 @@ fun PantallaInfoHidromet(
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -2732,8 +2772,8 @@ fun PantallaInfoHidromet(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -2779,7 +2819,7 @@ fun PantallaRiesgosQuimicoTecnologicos(
             text = "Fenómenos Químico-Tecnológicos",
             fontSize = 30.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Start
         )
@@ -2787,7 +2827,7 @@ fun PantallaRiesgosQuimicoTecnologicos(
         Text(
             text = "Los fenómenos químicos – tecnológicos son aquellos provocados por actividades industriales, comerciales y de servicios.",
             fontSize = 16.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Start
         )
@@ -2832,8 +2872,8 @@ fun PantallaRiesgosQuimicoTecnologicos(
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 120.dp)
@@ -2850,8 +2890,8 @@ fun PantallaRiesgosQuimicoTecnologicos(
                 onClick = onActividad,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 120.dp)
@@ -2868,8 +2908,8 @@ fun PantallaRiesgosQuimicoTecnologicos(
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 120.dp)
@@ -2900,7 +2940,7 @@ fun OpcionQuimicoTecnologico(
             .clickable(enabled = onClick != null) { onClick?.invoke() },
         shape = RoundedCornerShape(16.dp),
         shadowElevation = 4.dp,
-        color = Color.White
+        color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier
@@ -2952,7 +2992,7 @@ fun OpcionQuimicoTecnologico(
                 text = texto,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
                 maxLines = 3
             )
@@ -2993,7 +3033,7 @@ fun PantallaAlmacenamientoCombustibles(onBack: () -> Unit, onMenu: () -> Unit, o
         Text(
             text = "Fenómenos químico – tecnológicos",
             fontSize = 18.sp,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3002,7 +3042,7 @@ fun PantallaAlmacenamientoCombustibles(onBack: () -> Unit, onMenu: () -> Unit, o
             text = "Almacenamiento y transportación de combustibles",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3010,7 +3050,7 @@ fun PantallaAlmacenamientoCombustibles(onBack: () -> Unit, onMenu: () -> Unit, o
         Text(
             text = "El almacenamiento y la transportación de combustible consiste en el conjunto de recintos y recipientes usados para contener productos químicos combustibles.",
             fontSize = 17.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3030,8 +3070,8 @@ fun PantallaAlmacenamientoCombustibles(onBack: () -> Unit, onMenu: () -> Unit, o
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3048,8 +3088,8 @@ fun PantallaAlmacenamientoCombustibles(onBack: () -> Unit, onMenu: () -> Unit, o
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3066,8 +3106,8 @@ fun PantallaAlmacenamientoCombustibles(onBack: () -> Unit, onMenu: () -> Unit, o
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3097,7 +3137,7 @@ fun PantallaFugasGas(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit)
         Text(
             text = "Fenómenos químico – tecnológicos",
             fontSize = 18.sp,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3106,7 +3146,7 @@ fun PantallaFugasGas(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit)
             text = "Fugas de gas y derrames de sustancias",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3114,7 +3154,7 @@ fun PantallaFugasGas(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit)
         Text(
             text = "La fugas de gas y derrames de sustancias es la emisión de gas o sustancias fuera de un sistema por fracturas, rupturas o diferentes afectaciones al mismo.",
             fontSize = 17.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3134,8 +3174,8 @@ fun PantallaFugasGas(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit)
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3152,8 +3192,8 @@ fun PantallaFugasGas(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit)
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3170,8 +3210,8 @@ fun PantallaFugasGas(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit)
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3201,7 +3241,7 @@ fun PantallaResiduosPeligrosos(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
         Text(
             text = "Fenómenos químico – tecnológicos",
             fontSize = 18.sp,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3210,7 +3250,7 @@ fun PantallaResiduosPeligrosos(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
             text = "Manejo de residuos peligrosos",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3218,7 +3258,7 @@ fun PantallaResiduosPeligrosos(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
         Text(
             text = "El manejo de residuos peligrosos es cuando se manejan sustancias que pueden representar un peligro como el Gas L.P., amoniaco, cloro, etc.",
             fontSize = 17.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3238,8 +3278,8 @@ fun PantallaResiduosPeligrosos(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3256,8 +3296,8 @@ fun PantallaResiduosPeligrosos(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3274,8 +3314,8 @@ fun PantallaResiduosPeligrosos(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3305,7 +3345,7 @@ fun PantallaExplosionesQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> 
         Text(
             text = "Fenómenos químico – tecnológicos",
             fontSize = 18.sp,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3314,7 +3354,7 @@ fun PantallaExplosionesQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> 
             text = "Explosiones",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3322,7 +3362,7 @@ fun PantallaExplosionesQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> 
         Text(
             text = "Las explosiones se originan a partir de una reacción química, por ignición o calentamiento de algunos materiales provocando una expansión violenta de los gases.",
             fontSize = 17.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3342,8 +3382,8 @@ fun PantallaExplosionesQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> 
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3360,8 +3400,8 @@ fun PantallaExplosionesQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> 
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3378,8 +3418,8 @@ fun PantallaExplosionesQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> 
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3409,7 +3449,7 @@ fun PantallaIncendiosForestalesQT(onBack: () -> Unit, onMenu: () -> Unit, onNext
         Text(
             text = "Fenómenos químico – tecnológicos",
             fontSize = 18.sp,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3418,7 +3458,7 @@ fun PantallaIncendiosForestalesQT(onBack: () -> Unit, onMenu: () -> Unit, onNext
             text = "Incendios forestales",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3426,7 +3466,7 @@ fun PantallaIncendiosForestalesQT(onBack: () -> Unit, onMenu: () -> Unit, onNext
         Text(
             text = "Lo incendios forestales ocurren cuando el fuego se extiende de manera descontrolada y afecta a bosques, selvas o vegetación.",
             fontSize = 17.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3446,8 +3486,8 @@ fun PantallaIncendiosForestalesQT(onBack: () -> Unit, onMenu: () -> Unit, onNext
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3464,8 +3504,8 @@ fun PantallaIncendiosForestalesQT(onBack: () -> Unit, onMenu: () -> Unit, onNext
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3482,8 +3522,8 @@ fun PantallaIncendiosForestalesQT(onBack: () -> Unit, onMenu: () -> Unit, onNext
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3513,7 +3553,7 @@ fun PantallaIncendiosUrbanosQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
         Text(
             text = "Fenómenos químico – tecnológicos",
             fontSize = 18.sp,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3522,7 +3562,7 @@ fun PantallaIncendiosUrbanosQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
             text = "Incendios urbanos",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3530,7 +3570,7 @@ fun PantallaIncendiosUrbanosQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
         Text(
             text = "Los incendios urbanos son reacciones químicas que se manifiesta en escenarios urbanos  y desprende luz, calor, humo y gases en grandes cantidades.",
             fontSize = 17.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3550,8 +3590,8 @@ fun PantallaIncendiosUrbanosQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3568,8 +3608,8 @@ fun PantallaIncendiosUrbanosQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3586,8 +3626,8 @@ fun PantallaIncendiosUrbanosQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3632,7 +3672,7 @@ fun PantallaRiesgosSanitarioEcologicos(
             text = "Fenómenos Sanitario-Ecológicos",
             fontSize = 30.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Start
         )
@@ -3640,7 +3680,7 @@ fun PantallaRiesgosSanitarioEcologicos(
         Text(
             text = "Los fenómenos sanitario – ecológicos son aquellos donde un agente perturbador afectan a los seres vivos y el medio ambiente.",
             fontSize = 16.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Start
         )
@@ -3676,8 +3716,8 @@ fun PantallaRiesgosSanitarioEcologicos(
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 120.dp)
@@ -3694,8 +3734,8 @@ fun PantallaRiesgosSanitarioEcologicos(
                 onClick = onActividad,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 120.dp)
@@ -3712,8 +3752,8 @@ fun PantallaRiesgosSanitarioEcologicos(
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 120.dp)
@@ -3744,7 +3784,7 @@ fun OpcionSanitarioEcologico(
             .clickable(enabled = onClick != null) { onClick?.invoke() },
         shape = RoundedCornerShape(16.dp),
         shadowElevation = 4.dp,
-        color = Color.White
+        color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier
@@ -3791,7 +3831,7 @@ fun OpcionSanitarioEcologico(
                 text = texto,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
                 maxLines = 3
             )
@@ -3884,7 +3924,7 @@ fun PantallaInfoSanitarioEco(
             text = titulo,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3892,7 +3932,7 @@ fun PantallaInfoSanitarioEco(
         Text(
             text = descripcion,
             fontSize = 17.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -3902,16 +3942,6 @@ fun PantallaInfoSanitarioEco(
                 modifier = Modifier.fillMaxWidth().height(200.dp),
                 videoResId = videoResId
             )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(160.dp)
-                    .background(Color.LightGray, shape = RoundedCornerShape(12.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("[Aquí irá el video]", color = Color.DarkGray, fontSize = 14.sp)
-            }
         }
         Spacer(modifier = Modifier.weight(1f))
         Row(
@@ -3922,8 +3952,8 @@ fun PantallaInfoSanitarioEco(
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3940,8 +3970,8 @@ fun PantallaInfoSanitarioEco(
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -3958,8 +3988,8 @@ fun PantallaInfoSanitarioEco(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -4002,7 +4032,7 @@ fun PantallaRiesgosSocioOrganizativos(
             text = "Fenómenos Socio – Organizativos",
             fontSize = 30.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Start
         )
@@ -4010,7 +4040,7 @@ fun PantallaRiesgosSocioOrganizativos(
         Text(
             text = "Los fenómenos socio – organizativos se generan con motivo de errores humanos o por acciones premeditadas.",
             fontSize = 16.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Start
         )
@@ -4046,8 +4076,8 @@ fun PantallaRiesgosSocioOrganizativos(
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 120.dp)
@@ -4064,8 +4094,8 @@ fun PantallaRiesgosSocioOrganizativos(
                 onClick = onActividad,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 120.dp)
@@ -4082,8 +4112,8 @@ fun PantallaRiesgosSocioOrganizativos(
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 120.dp)
@@ -4114,7 +4144,7 @@ fun OpcionSocioOrganizativo(
             .clickable(enabled = onClick != null) { onClick?.invoke() },
         shape = RoundedCornerShape(16.dp),
         shadowElevation = 4.dp,
-        color = Color.White
+        color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier
@@ -4151,7 +4181,7 @@ fun OpcionSocioOrganizativo(
                 text = texto,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
                 maxLines = 3
             )
@@ -4171,7 +4201,8 @@ fun PantallaAccidentesCarreteros(onBack: () -> Unit, onMenu: () -> Unit, onNext:
         onBack = onBack,
         onMenu = onMenu,
         onNext = onNext,
-        esUltimo = false
+        esUltimo = false,
+        videoResId = R.raw.fsoaccdentescar
     )
 }
 
@@ -4223,7 +4254,7 @@ fun PantallaInfoSocioOrg(
             text = titulo,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -4231,7 +4262,7 @@ fun PantallaInfoSocioOrg(
         Text(
             text = descripcion,
             fontSize = 17.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center
         )
@@ -4241,16 +4272,6 @@ fun PantallaInfoSocioOrg(
                 modifier = Modifier.fillMaxWidth().height(200.dp),
                 videoResId = videoResId
             )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(160.dp)
-                    .background(Color.LightGray, shape = RoundedCornerShape(12.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("[Aquí irá el video]", color = Color.DarkGray, fontSize = 14.sp)
-            }
         }
         Spacer(modifier = Modifier.weight(1f))
         Row(
@@ -4261,8 +4282,8 @@ fun PantallaInfoSocioOrg(
                 onClick = onBack,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -4279,8 +4300,8 @@ fun PantallaInfoSocioOrg(
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = Color.Black
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -4297,8 +4318,8 @@ fun PantallaInfoSocioOrg(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1976D2),
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 modifier = Modifier
                     .widthIn(min = 100.dp)
@@ -4335,6 +4356,14 @@ fun PantallaCodigoPostalPreview() {
     }
 }
 
+// Nueva función solo para preview
+@Preview(showBackground = true)
+@Composable
+fun PantallaSopaLetrasGeologicosPreview() {
+    PantallaSopaLetrasGeologicos(
+        onBack = {} // Función vacía para el preview
+    )
+}
 // --- Pantalla de Sopa de Letras para Fenómenos Geológicos ---
 @Composable
 fun PantallaSopaLetrasGeologicos(
@@ -4356,190 +4385,17 @@ fun PantallaSopaLetrasGeologicos(
     val palabras = listOf(
         "ERUPCION", "VOLCANICA", "GRIETAS", "LADERAS", "SISMO", "SOCAVONES", "TSUNAMI"
     )
+
     SopaLetrasScreen(
         matriz = matriz,
         palabras = palabras,
-        onBack = onBack
+        onBack = onBack,
+        titulo = "Sopa de letras:",
+        subtitulo = "Fenómenos Geológicos",
+        pregunta = "Un fenómeno geológico lo identificas cuando ocurre un:",
+        opciones = listOf("Sismo", "Huracán", "Incendio forestal"),
+        opcionCorrecta = 0 // "Sismo" es la opción correcta (índice 0)
     )
-}
-
-// Composable base para la sopa de letras (lógica e interfaz básica)
-@Composable
-fun SopaLetrasScreen(
-    matriz: List<List<Char>>,
-    palabras: List<String>,
-    onBack: () -> Unit
-) {
-    // Aquí irá la lógica de selección, validación y tachado
-    // Por ahora, solo muestro la matriz y la lista de palabras
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Sopa de letras:",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Text(
-            text = "Fenómenos Geológicos",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-            textAlign = TextAlign.Center
-        )
-
-        // Estados para selección y palabras encontradas
-        val seleccion = remember { mutableStateListOf<Pair<Int, Int>>() }
-        val encontradas = remember { mutableStateListOf<String>() }
-        val posicionesEncontradas = remember { mutableStateListOf<List<Pair<Int, Int>>>() }
-        var inicio by remember { mutableStateOf<Pair<Int, Int>?>(null) }
-        var fin by remember { mutableStateOf<Pair<Int, Int>?>(null) }
-        var seleccionando by remember { mutableStateOf(false) }
-
-        // Función para obtener la palabra seleccionada y sus posiciones
-        fun palabraSeleccionadaYPosiciones(): Pair<String, List<Pair<Int, Int>>> {
-            if (inicio == null || fin == null) return "" to emptyList()
-            val (i0, j0) = inicio!!
-            val (i1, j1) = fin!!
-            val di = (i1 - i0).coerceIn(-1, 1)
-            val dj = (j1 - j0).coerceIn(-1, 1)
-            val len = maxOf(kotlin.math.abs(i1 - i0), kotlin.math.abs(j1 - j0)) + 1
-            val sb = StringBuilder()
-            val posiciones = mutableListOf<Pair<Int, Int>>()
-            for (k in 0 until len) {
-                val ni = i0 + k * di
-                val nj = j0 + k * dj
-                if (ni in matriz.indices && nj in matriz[0].indices) {
-                    sb.append(matriz[ni][nj])
-                    posiciones.add(ni to nj)
-                }
-            }
-            return sb.toString().uppercase() to posiciones
-        }
-
-        // Matriz de letras con interacción drag
-        for ((i, fila) in matriz.withIndex()) {
-            Row {
-                for ((j, letra) in fila.withIndex()) {
-                    val pos = i to j
-                    val seleccionado = seleccion.contains(pos)
-                    val subrayado = posicionesEncontradas.any { lista -> pos in lista }
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .background(
-                                when {
-                                    seleccionado -> Color(0xFF90CAF9) // Azul claro si está seleccionando
-                                    subrayado -> Color(0xFF1976D2) // Azul fuerte si la palabra fue encontrada
-                                    else -> Color(0xFFE0E0E0)
-                                },
-                                RoundedCornerShape(4.dp)
-                            )
-                            .padding(2.dp)
-                            .pointerInput(Unit) {
-                                detectDragGestures(
-                                    onDragStart = {
-                                        inicio = pos
-                                        fin = pos
-                                        seleccion.clear()
-                                        seleccion.add(pos)
-                                        seleccionando = true
-                                    },
-                                    onDrag = { change, _ ->
-                                        if (inicio != null) {
-                                            val localPos = change.position
-                                            val cellSize = 62f // Ajustado para sensibilidad óptima
-                                            val j1 = (localPos.x / cellSize).toInt().coerceIn(0, matriz[0].size - 1)
-                                            val i1 = (localPos.y / cellSize).toInt().coerceIn(0, matriz.size - 1)
-                                            val (i0, j0) = inicio!!
-                                            // Priorizar horizontal, luego vertical
-                                            val dx = j1 - j0
-                                            val dy = i1 - i0
-                                            val absDx = abs(dx)
-                                            val absDy = abs(dy)
-                                            val di: Int
-                                            val dj: Int
-                                            val len: Int
-                                            if (absDx > 0) {
-                                                di = 0
-                                                dj = if (dx > 0) 1 else -1
-                                                len = absDx + 1
-                                            } else if (absDy > 0) {
-                                                di = if (dy > 0) 1 else -1
-                                                dj = 0
-                                                len = absDy + 1
-                                            } else {
-                                                di = 0
-                                                dj = 0
-                                                len = 1
-                                            }
-                                            seleccion.clear()
-                                            for (k in 0 until len) {
-                                                val ni = i0 + k * di
-                                                val nj = j0 + k * dj
-                                                if (ni in matriz.indices && nj in matriz[0].indices) {
-                                                    seleccion.add(Pair(ni, nj))
-                                                }
-                                            }
-                                            fin = Pair(i0 + (len - 1) * di, j0 + (len - 1) * dj)
-                                        }
-                                    },
-                                    onDragEnd = {
-                                        seleccionando = false
-                                        val (palabra, posiciones) = palabraSeleccionadaYPosiciones()
-                                        if (palabra in palabras && palabra !in encontradas) {
-                                            encontradas.add(palabra)
-                                            posicionesEncontradas.add(posiciones)
-                                        }
-                                        seleccion.clear()
-                                    },
-                                    onDragCancel = {
-                                        seleccionando = false
-                                        seleccion.clear()
-                                    }
-                                )
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(text = letra.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(modifier = Modifier.size(2.dp))
-                }
-            }
-            Spacer(modifier = Modifier.height(2.dp))
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Lista de palabras:", fontWeight = FontWeight.SemiBold)
-        Column(
-            modifier = Modifier.padding(top = 8.dp),
-            horizontalAlignment = Alignment.Start
-        ) {
-            for (palabra in palabras) {
-                val tachada = palabra in encontradas
-                Text(
-                    text = palabra,
-                    fontSize = 16.sp,
-                    textDecoration = if (tachada) TextDecoration.LineThrough else TextDecoration.None,
-                    color = if (tachada) Color.Gray else Color.Black
-                )
-            }
-        }
-        // Contador de palabras encontradas
-        Text(
-            text = "Palabras encontradas: ${encontradas.size} de ${palabras.size}",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color(0xFF1976D2),
-            modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Button(onClick = onBack) { Text("Regresar") }
-    }
 }
 
 // --- Pantalla de Sopa de Letras para Fenómenos Hidrometeorológicos ---
@@ -4563,30 +4419,139 @@ fun PantallaSopaLetrasHidrometeorologicos(
     val palabras = listOf(
         "GRANIZO", "HELADAS", "HURACANES", "NIEBLA", "SEQUIAS", "TORMENTAS", "FRIOS"
     )
+
     SopaLetrasScreen(
         matriz = matriz,
         palabras = palabras,
         onBack = onBack,
         titulo = "Sopa de letras:",
-        subtitulo = "Fenómenos Hidrometeorológicos"
+        subtitulo = "Fenómenos Hidrometeorológicos",
+        pregunta = "Un fenómeno hidrometeorológico lo identificas cuando ocurre un(a):",
+        opciones = listOf("Deslizamiento de ladera", "Explosión", "Huracán"),
+        opcionCorrecta = 2 // "Huracán" es la opción correcta (índice 2)
     )
 }
 
-// Modificar SopaLetrasScreen para aceptar título y subtítulo opcionales
+// --- Pantalla de Sopa de Letras para Fenómenos Socio-Organizativos ---
+@Composable
+fun PantallaSopaLetrasSocioOrganizativos(
+    onBack: () -> Unit
+) {
+    // Matriz de la sopa de letras (10x10) exactamente como en la imagen proporcionada, agregando MASIVO en la fila 6
+    val matriz = listOf(
+        listOf('M','C','A','R','R','E','T','E','R','O'),
+        listOf('K','Á','J','Y','S','S','F','X','M','T'),
+        listOf('P','E','R','S','O','N','A','S','S','Q'),
+        listOf('S','A','B','O','T','A','J','E','S','N'),
+        listOf('G','M','G','S','O','C','I','O','M','V'),
+        listOf('J','J','Ñ','X','M','Ú','A','M','V','Q'),
+        listOf('M','A','S','I','V','O','R','Ñ','Ó','Á'), // MASIVO en horizontal
+        listOf('X','G','T','S','A','E','R','E','O','U'),
+        listOf('T','E','R','R','O','R','I','S','M','O'),
+        listOf('R','A','C','C','I','D','E','N','T','E')
+    )
+    val palabras = listOf(
+        "ACCIDENTE", "AEREO", "CARRETERO", "MASIVO", "PERSONAS", "SABOTAJE", "SOCIO", "TERRORISMO"
+    )
+
+    SopaLetrasScreen(
+        matriz = matriz,
+        palabras = palabras,
+        onBack = onBack,
+        titulo = "Sopa de letras:",
+        subtitulo = "Fenómenos Socio-Organizativos",
+        pregunta = "Un fenómeno Sanitario-Ecológico lo identificas cuando ocurre un(a):",
+        opciones = listOf("Fugas de gas y derrames de sustancias", "Terrorismo y sabotaje", "Tsunami"),
+        opcionCorrecta = 1 // "Contaminación de suelo" es la opción correcta (índice 1)
+    )
+}
+
+// --- Pantalla de Sopa de Letras para Fenómenos Sanitario-Ecológicos ---
+@Composable
+fun PantallaSopaLetrasSanitarioEcologico(
+    onBack: () -> Unit
+) {
+    // Matriz de la sopa de letras (10x10) con SUELO y ECOLOGICOS en horizontal y la última fila igual
+    val matriz = listOf(
+        listOf('S','U','E','L','O','V','S','Í','R','O'), // SUELO horizontal
+        listOf('U','S','Z','L','D','H','U','S','É','C'),
+        listOf('E','C','O','L','O','G','I','C','O','S'), // ECOLOGICOS horizontal
+        listOf('Ú','P','L','A','G','A','S','Y','L','O'),
+        listOf('N','N','Q','M','T','G','X','C','E','G'),
+        listOf('S','A','N','I','T','A','R','I','O','G'),
+        listOf('M','O','N','A','I','R','E','Ñ','Q','O'),
+        listOf('E','P','I','D','E','M','I','A','S','S'),
+        listOf('Ñ','F','M','X','Ú','A','G','U','A','S'),
+        listOf('Y','Ü','P','Ñ','M','U','Í','S','K','L') // Última fila igual
+
+    )
+    val palabras = listOf(
+        "AGUA", "AIRE", "ECOLOGICOS", "EPIDEMIAS", "PLAGAS", "SANITARIO", "SUELO"
+    )
+
+    SopaLetrasScreen(
+        matriz = matriz,
+        palabras = palabras,
+        onBack = onBack,
+        titulo = "Sopa de letras:",
+        subtitulo = "Fenómenos Sanitario-Ecológicos",
+        pregunta = "Un fenómeno Sanitario-Ecológico lo identificas cuando ocurre un(a):",
+        opciones = listOf("Manejo de residuos peligrosos", "Concentración masiva de personas", "Contaminación de suelo"),
+        opcionCorrecta = 2 // "Contaminación de suelo" es la opción correcta (índice 2)
+    )
+}
+
+// --- Pantalla de Sopa de Letras para Químico-Tecnológicos ---
+@Composable
+fun PantallaSopaLetrasQuimicoTec(
+    onBack: () -> Unit
+) {
+    // Matriz de la sopa de letras (10x10) ajustada: sin TRANSPORTE, URBANOS corregido, INCENDIOS añadido
+    val matriz = listOf(
+        listOf('F','R','E','S','I','D','U','O','S','N'), // RESIDUOS
+        listOf('O','O','F','U','G','A','S','É','É','I'), // FUGAS
+        listOf('U','R','B','A','N','O','S','T','E','O'), // URBANOS (U normal)
+        listOf('F','N','N','E','Ú','C','D','H','Ñ','C'),
+        listOf('E','X','P','L','O','S','I','O','N','S'), // EXPLOSION
+        listOf('I','N','C','E','N','D','I','O','S','Q'), // INCENDIOS
+        listOf('H','L','M','X','R','É','A','H','Ú','D'),
+        listOf('D','C','H','Q','J','A','J','L','K','I'),
+        listOf('D','E','R','R','A','M','E','S','E','O'), // DERRAMES
+        listOf('P','E','L','I','G','R','O','S','O','S')  // PELIGROSOS
+    )
+    val palabras = listOf(
+        "DERRAMES", "FORESTALES", "FUGAS", "INCENDIOS", "PELIGROSOS", "RESIDUOS", "URBANOS", "EXPLOSION"
+    )
+
+    SopaLetrasScreen(
+        matriz = matriz,
+        palabras = palabras,
+        onBack = onBack,
+        titulo = "Sopa de letras:",
+        subtitulo = "Fenómenos Químico-Tecnológicos",
+        pregunta = "Un fenómeno Químico-Tecnológico lo identificas cuando ocurre un(a):",
+        opciones = listOf("Helada", "Incendio forestal", "Accidente carretero"),
+        opcionCorrecta = 1 // "Incendio forestal" es la opción correcta (índice 1)
+    )
+}
+
+// Composable base para la sopa de letras (lógica e interfaz básica)
 @Composable
 fun SopaLetrasScreen(
     matriz: List<List<Char>>,
     palabras: List<String>,
     onBack: () -> Unit,
     titulo: String = "Sopa de letras:",
-    subtitulo: String = "Fenómenos Geológicos"
+    subtitulo: String = "Fenómenos Geológicos",
+    pregunta: String = "",
+    opciones: List<String> = emptyList(),
+    opcionCorrecta: Int = -1
 ) {
-    // Aquí irá la lógica de selección, validación y tachado
-    // Por ahora, solo muestro la matriz y la lista de palabras
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -4612,6 +4577,10 @@ fun SopaLetrasScreen(
         var fin by remember { mutableStateOf<Pair<Int, Int>?>(null) }
         var seleccionando by remember { mutableStateOf(false) }
 
+        // Estados para la pregunta
+        var respuestaSeleccionada by remember { mutableStateOf<String?>(null) }
+        var mostrarResultado by remember { mutableStateOf(false) }
+
         // Función para obtener la palabra seleccionada y sus posiciones
         fun palabraSeleccionadaYPosiciones(): Pair<String, List<Pair<Int, Int>>> {
             if (inicio == null || fin == null) return "" to emptyList()
@@ -4619,7 +4588,7 @@ fun SopaLetrasScreen(
             val (i1, j1) = fin!!
             val di = (i1 - i0).coerceIn(-1, 1)
             val dj = (j1 - j0).coerceIn(-1, 1)
-            val len = maxOf(kotlin.math.abs(i1 - i0), kotlin.math.abs(j1 - j0)) + 1
+            val len = maxOf(abs(i1 - i0), abs(j1 - j0)) + 1
             val sb = StringBuilder()
             val posiciones = mutableListOf<Pair<Int, Int>>()
             for (k in 0 until len) {
@@ -4646,8 +4615,8 @@ fun SopaLetrasScreen(
                             .background(
                                 when {
                                     seleccionado -> Color(0xFF90CAF9) // Azul claro si está seleccionando
-                                    subrayado -> Color(0xFF1976D2) // Azul fuerte si la palabra fue encontrada
-                                    else -> Color(0xFFE0E0E0)
+                                    subrayado -> MaterialTheme.colorScheme.primary // usa color del tema
+                                    else -> MaterialTheme.colorScheme.surfaceVariant
                                 },
                                 RoundedCornerShape(4.dp)
                             )
@@ -4724,7 +4693,9 @@ fun SopaLetrasScreen(
             }
             Spacer(modifier = Modifier.height(2.dp))
         }
+
         Spacer(modifier = Modifier.height(16.dp))
+
         Text("Lista de palabras:", fontWeight = FontWeight.SemiBold)
         Column(
             modifier = Modifier.padding(top = 8.dp),
@@ -4736,109 +4707,111 @@ fun SopaLetrasScreen(
                     text = palabra,
                     fontSize = 16.sp,
                     textDecoration = if (tachada) TextDecoration.LineThrough else TextDecoration.None,
-                    color = if (tachada) Color.Gray else Color.Black
+                    color = if (tachada) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                 )
             }
         }
+
         // Contador de palabras encontradas
         Text(
             text = "Palabras encontradas: ${encontradas.size} de ${palabras.size}",
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium,
-            color = Color(0xFF1976D2),
-            modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = 12.dp, bottom = 16.dp)
         )
-        Spacer(modifier = Modifier.weight(1f))
+
+        // Sección de pregunta solo si se proporcionan pregunta y opciones
+        if (pregunta.isNotBlank() && opciones.isNotEmpty() && opcionCorrecta >= 0) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        RoundedCornerShape(8.dp)
+                    )
+                    .padding(16.dp)
+            ) {
+                Column {
+                    Text(
+                        text = "Responde la siguiente pregunta de manera correcta.",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    Text(
+                        text = pregunta,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    // Opciones de respuesta
+                    opciones.forEach { opcion ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    respuestaSeleccionada = opcion
+                                    mostrarResultado = true
+                                }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // RadioButton personalizado simple
+                            Box(
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .background(
+                                        if (respuestaSeleccionada == opcion) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                        RoundedCornerShape(10.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (respuestaSeleccionada == opcion) {
+                                    Text(
+                                        text = "●",
+                                        color = MaterialTheme.colorScheme.surface,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.padding(horizontal = 8.dp))
+                            Text(
+                                text = opcion,
+                                fontSize = 16.sp
+                            )
+                        }
+                    }
+
+                    // Mostrar resultado
+                    if (mostrarResultado && respuestaSeleccionada != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        val esCorrecta = respuestaSeleccionada == opciones[opcionCorrecta]
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    if (esCorrecta) Color(0xFFE8F5E8) else Color(0xFFFFEBEE),
+                                    RoundedCornerShape(6.dp)
+                                )
+                                .padding(12.dp)
+                        ) {
+                            Text(
+                                text = if (esCorrecta) "¡Correcto!"
+                                else "Incorrecto. La respuesta correcta es: ${opciones[opcionCorrecta]}",
+                                fontSize = 14.sp,
+                                color = if (esCorrecta) Color(0xFF2E7D32) else Color(0xFFD32F2F),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
         Button(onClick = onBack) { Text("Regresar") }
     }
-}
-
-// --- Pantalla de Sopa de Letras para Fenómenos Socio-Organizativos ---
-@Composable
-fun PantallaSopaLetrasSocioOrganizativos(
-    onBack: () -> Unit
-) {
-    // Matriz de la sopa de letras (10x10) exactamente como en la imagen proporcionada, agregando MASIVO en la fila 6
-    val matriz = listOf(
-        listOf('M','C','A','R','R','E','T','E','R','O'),
-        listOf('K','Á','J','Y','S','S','F','X','M','T'),
-        listOf('P','E','R','S','O','N','A','S','S','Q'),
-        listOf('S','A','B','O','T','A','J','E','S','N'),
-        listOf('G','M','G','S','O','C','I','O','M','V'),
-        listOf('J','J','Ñ','X','M','Ú','A','M','V','Q'),
-        listOf('M','A','S','I','V','O','R','Ñ','Ó','Á'), // MASIVO en horizontal
-        listOf('X','G','T','S','A','E','R','E','O','U'),
-        listOf('T','E','R','R','O','R','I','S','M','O'),
-        listOf('R','A','C','C','I','D','E','N','T','E')
-    )
-    val palabras = listOf(
-        "ACCIDENTE", "AEREO", "CARRETERO", "MASIVO", "PERSONAS", "SABOTAJE", "SOCIO", "TERRORISMO"
-    )
-    SopaLetrasScreen(
-        matriz = matriz,
-        palabras = palabras,
-        onBack = onBack,
-        titulo = "Sopa de letras:",
-        subtitulo = "Fenómenos Socio-Organizativos"
-    )
-}
-
-// --- Pantalla de Sopa de Letras para Fenómenos Sanitario-Ecológicos ---
-@Composable
-fun PantallaSopaLetrasSanitarioEcologico(
-    onBack: () -> Unit
-) {
-    // Matriz de la sopa de letras (10x10) con SUELO y ECOLOGICOS en horizontal y la última fila igual
-    val matriz = listOf(
-        listOf('S','U','E','L','O','V','S','Í','R','O'), // SUELO horizontal
-        listOf('U','S','Z','L','D','H','U','S','É','C'),
-        listOf('E','C','O','L','O','G','I','C','O','S'), // ECOLOGICOS horizontal
-        listOf('Ú','P','L','A','G','A','S','Y','L','O'),
-        listOf('N','N','Q','M','T','G','X','C','E','G'),
-        listOf('S','A','N','I','T','A','R','I','O','G'),
-        listOf('M','O','N','A','I','R','E','Ñ','Q','O'),
-        listOf('E','P','I','D','E','M','I','A','S','S'),
-        listOf('Ñ','F','M','X','Ú','A','G','U','A','S'),
-        listOf('Y','Ü','P','Ñ','M','U','Í','S','K','L') // Última fila igual
-    )
-    val palabras = listOf(
-        "AGUA", "AIRE", "ECOLOGICOS", "EPIDEMIAS", "PLAGAS", "SANITARIO", "SUELO"
-    )
-    SopaLetrasScreen(
-        matriz = matriz,
-        palabras = palabras,
-        onBack = onBack,
-        titulo = "Sopa de letras:",
-        subtitulo = "Fenómenos Sanitario-Ecológicos"
-    )
-}
-
-// --- Pantalla de Sopa de Letras para Químico-Tecnológicos ---
-@Composable
-fun PantallaSopaLetrasQuimicoTec(
-    onBack: () -> Unit
-) {
-    // Matriz de la sopa de letras (10x10) ajustada: sin TRANSPORTE, URBANOS corregido, INCENDIOS añadido
-    val matriz = listOf(
-        listOf('F','R','E','S','I','D','U','O','S','N'), // RESIDUOS
-        listOf('O','O','F','U','G','A','S','É','É','I'), // FUGAS
-        listOf('U','R','B','A','N','O','S','T','E','O'), // URBANOS (U normal)
-        listOf('F','N','N','E','Ú','C','D','H','Ñ','C'),
-        listOf('E','X','P','L','O','S','I','O','N','S'), // EXPLOSION
-        listOf('I','N','C','E','N','D','I','O','S','Q'), // INCENDIOS
-        listOf('H','L','M','X','R','É','A','H','Ú','D'),
-        listOf('D','C','H','Q','J','A','J','L','K','I'),
-        listOf('D','E','R','R','A','M','E','S','E','O'), // DERRAMES
-        listOf('P','E','L','I','G','R','O','S','O','S')  // PELIGROSOS
-    )
-    val palabras = listOf(
-        "DERRAMES", "FORESTALES", "FUGAS", "INCENDIOS", "PELIGROSOS", "RESIDUOS", "URBANOS", "EXPLOSION"
-    )
-    SopaLetrasScreen(
-        matriz = matriz,
-        palabras = palabras,
-        onBack = onBack,
-        titulo = "Sopa de letras:",
-        subtitulo = "Fenómenos Químico-Tecnológicos"
-    )
 }
