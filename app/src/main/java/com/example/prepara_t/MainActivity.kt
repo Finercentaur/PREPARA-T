@@ -152,7 +152,7 @@ class MainActivity : ComponentActivity() {
             // Estado para controlar el tema (modo claro por defecto)
             var isDarkTheme by remember { mutableStateOf(false) }
             
-            PREPARATTheme(isDarkTheme = isDarkTheme) { // Aplica el tema definido en tu proyecto
+            PREPARATTheme(isDarkTheme = isDarkTheme) { // Aplica el tema definido en el proyecto
                 Surface(
                     modifier = Modifier.fillMaxSize(), // La superficie ocupa toda la pantalla
                     color = MaterialTheme.colorScheme.background // Usa el color de fondo del tema
