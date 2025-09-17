@@ -3,7 +3,7 @@
 
     <style name="Theme.PREPARAT" parent="android:Theme.Material.Light.NoActionBar" />
     <style name="Theme.Prepara_t.SplashScreen" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@drawable/launch_background</item>
+        <item name="android:windowBackground">@drawable/ic_launch_background</item>
         <!-- Otros items -->
     </style>
 </resources>
