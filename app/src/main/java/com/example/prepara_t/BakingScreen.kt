@@ -138,7 +138,7 @@ fun BakingScreen(
             val scrollState = rememberScrollState()
             Text(
                 text = result,
-                textAlign = TextAlign.Start,
+                textAlign = TextAlign.Center,
                 color = textColor,
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)

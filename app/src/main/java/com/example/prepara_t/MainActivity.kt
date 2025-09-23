@@ -60,7 +60,8 @@ import androidx.media3.ui.PlayerView
 import kotlin.math.abs
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.foundation.layout.width
-
+import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.layout.PaddingValues
 // Enum para manejar las diferentes pantallas de la aplicación
 enum class AppScreen {
     HOME, // Pantalla principal (menú)
@@ -691,7 +692,7 @@ fun PantallaCreditos(
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Elis Antonio Aguilar Rios\n" +
-                    "Martín Cruz Muñoz\n" +
+                    "Martin Cruz Muñoz\n" +
                     "Ernesto García Mendoza\n" +
                     "Guillermo Ángeles Herrera\n" +
                     "Kevin Heras Romero\n" +
@@ -699,7 +700,8 @@ fun PantallaCreditos(
                     "Diana Vázquez López\n" +
                     "Roberto Del Olmo Mendoza\n" +
                     "Joshua Olvera Cruz\n" +
-                    "Victor Joohvan Veraza García",
+                    "Victor Joohvan Veraza García\n"+
+                    "Marifer Parra Avila",
             fontSize = 15.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
@@ -764,7 +766,7 @@ fun PantallaInicioFenomenos(
                     text = "Un fenómeno es cualquier evento o proceso que ocurre en la naturaleza o en la sociedad y que puede tener un impacto significativo en el medio ambiente, las personas o las estructuras. Los fenómenos pueden ser:",
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Justify
+                    textAlign = TextAlign.Center
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -794,7 +796,7 @@ fun PantallaInicioFenomenos(
                     text = "Los fenómenos naturales son eventos que ocurren por procesos naturales de la Tierra, sin intervención humana.",
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Justify,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 2.dp)
@@ -839,7 +841,7 @@ fun PantallaInicioFenomenos(
                     text = "Los fenómenos antrópicos son eventos causados directa o indirectamente por la actividad humana.",
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Justify,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 2.dp)
@@ -930,7 +932,7 @@ fun PantallaGeologicos(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Start
+            textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
@@ -938,7 +940,7 @@ fun PantallaGeologicos(
             fontSize = 16.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Start
+            textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(16.dp))
         // Video de fenómenos geológicos
@@ -1915,7 +1917,7 @@ fun PantallaRiesgosHidrometeorologicos(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Start
+            textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
@@ -1923,7 +1925,7 @@ fun PantallaRiesgosHidrometeorologicos(
             fontSize = 16.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Start
+            textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(16.dp))
         // Video de fenómenos hidrometeorológicos
@@ -2820,7 +2822,7 @@ fun PantallaRiesgosQuimicoTecnologicos(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Start
+            textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
@@ -2828,7 +2830,7 @@ fun PantallaRiesgosQuimicoTecnologicos(
             fontSize = 16.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Start
+            textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(16.dp))
         VideoPlayerExo(
@@ -3673,7 +3675,7 @@ fun PantallaRiesgosSanitarioEcologicos(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Start
+            textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
@@ -3681,7 +3683,7 @@ fun PantallaRiesgosSanitarioEcologicos(
             fontSize = 16.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Start
+            textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(16.dp))
         VideoPlayerExo(
@@ -4033,7 +4035,7 @@ fun PantallaRiesgosSocioOrganizativos(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Start
+            textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
@@ -4041,7 +4043,7 @@ fun PantallaRiesgosSocioOrganizativos(
             fontSize = 16.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Start
+            textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(16.dp))
         VideoPlayerExo(
@@ -4696,17 +4698,22 @@ fun SopaLetrasScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text("Lista de palabras:", fontWeight = FontWeight.SemiBold)
-        Column(
-            modifier = Modifier.padding(top = 8.dp),
-            horizontalAlignment = Alignment.Start
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3), // Cambiado a 3 columnas fijas
+            contentPadding = PaddingValues(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.height(80.dp)
         ) {
-            for (palabra in palabras) {
-                val tachada = palabra in encontradas
+            items(palabras) { palabra ->
+                val tachada = palabra in encontradas // Esta línea mantiene la funcionalidad de tachar
                 Text(
                     text = palabra,
                     fontSize = 16.sp,
-                    textDecoration = if (tachada) TextDecoration.LineThrough else TextDecoration.None,
-                    color = if (tachada) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                    textDecoration = if (tachada) TextDecoration.LineThrough else TextDecoration.None, // Mantiene el tachado
+                    color = if (tachada) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface, // Mantiene el cambio de color
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
                 )
             }
         }
