@@ -233,32 +233,32 @@ class MainActivity : ComponentActivity() {
                         )
                         AppScreen.ERUPCION_VOLCANICA -> PantallaErupcionVolcanica(
                             onBack = { navigateTo(AppScreen.GEOLOGICOS) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.GEOLOGICOS) },
                             onNext = { navigateTo(AppScreen.SISMO) }
                         )
                         AppScreen.SISMO -> PantallaSismo(
                             onBack = { navigateTo(AppScreen.ERUPCION_VOLCANICA) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.GEOLOGICOS) },
                             onNext = { navigateTo(AppScreen.TSUNAMI) }
                         )
                         AppScreen.TSUNAMI -> PantallaTsunami(
                             onBack = { navigateTo(AppScreen.SISMO) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.GEOLOGICOS) },
                             onNext = { navigateTo(AppScreen.GRIETAS) }
                         )
                         AppScreen.GRIETAS -> PantallaGrietas(
                             onBack = { navigateTo(AppScreen.TSUNAMI) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.GEOLOGICOS) },
                             onNext = { navigateTo(AppScreen.DESLIZAMIENTO_LADERAS) }
                         )
                         AppScreen.DESLIZAMIENTO_LADERAS -> PantallaDeslizamientoLaderas(
                             onBack = { navigateTo(AppScreen.GRIETAS) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.GEOLOGICOS) },
                             onNext = { navigateTo(AppScreen.HUNDIMIENTOS_SOCAVONES) }
                         )
                         AppScreen.HUNDIMIENTOS_SOCAVONES -> PantallaHundimientosSocavones(
                             onBack = { navigateTo(AppScreen.DESLIZAMIENTO_LADERAS) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.GEOLOGICOS) },
                             onNext = { navigateTo(AppScreen.GEOLOGICOS) }
                         )
                         AppScreen.HIDROMETEOROLOGICOS -> PantallaRiesgosHidrometeorologicos(
@@ -269,42 +269,42 @@ class MainActivity : ComponentActivity() {
                         )
                         AppScreen.CICLONES_TROPICALES -> PantallaCiclonesTropicales(
                             onBack = { navigateTo(AppScreen.HIDROMETEOROLOGICOS) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.HIDROMETEOROLOGICOS) },
                             onNext = { navigateTo(AppScreen.INUNDACIONES) }
                         )
                         AppScreen.INUNDACIONES -> PantallaInundaciones(
                             onBack = { navigateTo(AppScreen.CICLONES_TROPICALES) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.HIDROMETEOROLOGICOS) },
                             onNext = { navigateTo(AppScreen.HELADAS) }
                         )
                         AppScreen.HELADAS -> PantallaHeladas(
                             onBack = { navigateTo(AppScreen.INUNDACIONES) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.HIDROMETEOROLOGICOS) },
                             onNext = { navigateTo(AppScreen.NIEBLA) }
                         )
                         AppScreen.NIEBLA -> PantallaNiebla(
                             onBack = { navigateTo(AppScreen.HELADAS) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.HIDROMETEOROLOGICOS) },
                             onNext = { navigateTo(AppScreen.TORMENTAS_ELECTRICAS) }
                         )
                         AppScreen.TORMENTAS_ELECTRICAS -> PantallaTormentasElectricas(
                             onBack = { navigateTo(AppScreen.NIEBLA) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.HIDROMETEOROLOGICOS) },
                             onNext = { navigateTo(AppScreen.GRANIZO) }
                         )
                         AppScreen.GRANIZO -> PantallaGranizo(
                             onBack = { navigateTo(AppScreen.TORMENTAS_ELECTRICAS) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.HIDROMETEOROLOGICOS) },
                             onNext = { navigateTo(AppScreen.FRENTE_FRIO) }
                         )
                         AppScreen.FRENTE_FRIO -> PantallaFrenteFrio(
                             onBack = { navigateTo(AppScreen.GRANIZO) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.HIDROMETEOROLOGICOS) },
                             onNext = { navigateTo(AppScreen.SEQUIAS) }
                         )
                         AppScreen.SEQUIAS -> PantallaSequias(
                             onBack = { navigateTo(AppScreen.FRENTE_FRIO) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.HIDROMETEOROLOGICOS) },
                             onNext = { navigateTo(AppScreen.HIDROMETEOROLOGICOS) }
                         )
                         AppScreen.SOCIO_ORGANIZATIVOS -> PantallaSocioOrganizativos(
@@ -319,32 +319,32 @@ class MainActivity : ComponentActivity() {
                         )
                         AppScreen.ALMACENAMIENTO_COMBUSTIBLES -> PantallaAlmacenamientoCombustibles(
                             onBack = { navigateTo(AppScreen.QUIMICO_TECNOLOGICOS) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.QUIMICO_TECNOLOGICOS) },
                             onNext = { navigateTo(AppScreen.FUGAS_GAS) }
                         )
                         AppScreen.FUGAS_GAS -> PantallaFugasGas(
                             onBack = { navigateTo(AppScreen.ALMACENAMIENTO_COMBUSTIBLES) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.QUIMICO_TECNOLOGICOS) },
                             onNext = { navigateTo(AppScreen.RESIDUOS_PELIGROSOS) }
                         )
                         AppScreen.RESIDUOS_PELIGROSOS -> PantallaResiduosPeligrosos(
                             onBack = { navigateTo(AppScreen.FUGAS_GAS) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.QUIMICO_TECNOLOGICOS) },
                             onNext = { navigateTo(AppScreen.EXPLOSIONES_QT) }
                         )
                         AppScreen.EXPLOSIONES_QT -> PantallaExplosionesQT(
                             onBack = { navigateTo(AppScreen.RESIDUOS_PELIGROSOS) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.QUIMICO_TECNOLOGICOS) },
                             onNext = { navigateTo(AppScreen.INCENDIOS_FORESTALES_QT) }
                         )
                         AppScreen.INCENDIOS_FORESTALES_QT -> PantallaIncendiosForestalesQT(
                             onBack = { navigateTo(AppScreen.EXPLOSIONES_QT) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.QUIMICO_TECNOLOGICOS) },
                             onNext = { navigateTo(AppScreen.INCENDIOS_URBANOS_QT) }
                         )
                         AppScreen.INCENDIOS_URBANOS_QT -> PantallaIncendiosUrbanosQT(
                             onBack = { navigateTo(AppScreen.INCENDIOS_FORESTALES_QT) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.QUIMICO_TECNOLOGICOS) },
                             onNext = { navigateTo(AppScreen.QUIMICO_TECNOLOGICOS) }
                         )
                         AppScreen.SANITARIO_ECOLOGICOS -> PantallaRiesgosSanitarioEcologicos(
@@ -363,27 +363,27 @@ class MainActivity : ComponentActivity() {
                         )
                         AppScreen.CONTAMINACION_AIRE -> PantallaContaminacionAire(
                             onBack = { navigateTo(AppScreen.SANITARIO_ECOLOGICOS) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.SANITARIO_ECOLOGICOS) },
                             onNext = { navigateTo(AppScreen.CONTAMINACION_AGUA) }
                         )
                         AppScreen.CONTAMINACION_AGUA -> PantallaContaminacionAgua(
                             onBack = { navigateTo(AppScreen.CONTAMINACION_AIRE) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.SANITARIO_ECOLOGICOS) },
                             onNext = { navigateTo(AppScreen.CONTAMINACION_SUELO) }
                         )
                         AppScreen.CONTAMINACION_SUELO -> PantallaContaminacionSuelo(
                             onBack = { navigateTo(AppScreen.CONTAMINACION_AGUA) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.SANITARIO_ECOLOGICOS) },
                             onNext = { navigateTo(AppScreen.PLAGAS) }
                         )
                         AppScreen.PLAGAS -> PantallaPlagas(
                             onBack = { navigateTo(AppScreen.CONTAMINACION_SUELO) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.SANITARIO_ECOLOGICOS) },
                             onNext = { navigateTo(AppScreen.EPIDEMIAS) }
                         )
                         AppScreen.EPIDEMIAS -> PantallaEpidemias(
                             onBack = { navigateTo(AppScreen.PLAGAS) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.SANITARIO_ECOLOGICOS) },
                             onNext = { navigateTo(AppScreen.SANITARIO_ECOLOGICOS) }
                         )
                         AppScreen.SOCIO_ORGANIZATIVOS_LISTA -> PantallaRiesgosSocioOrganizativos(
@@ -400,17 +400,17 @@ class MainActivity : ComponentActivity() {
                         )
                         AppScreen.ACCIDENTES_CARRETEROS -> PantallaAccidentesCarreteros(
                             onBack = { navigateTo(AppScreen.SOCIO_ORGANIZATIVOS_LISTA) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.SOCIO_ORGANIZATIVOS_LISTA) },
                             onNext = { navigateTo(AppScreen.CONCENTRACION_PERSONAS) }
                         )
                         AppScreen.CONCENTRACION_PERSONAS -> PantallaConcentracionPersonas(
                             onBack = { navigateTo(AppScreen.ACCIDENTES_CARRETEROS) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.SOCIO_ORGANIZATIVOS_LISTA) },
                             onNext = { navigateTo(AppScreen.TERRORISMO_SABOTAJE) }
                         )
                         AppScreen.TERRORISMO_SABOTAJE -> PantallaTerrorismoSabotaje(
                             onBack = { navigateTo(AppScreen.CONCENTRACION_PERSONAS) },
-                            onMenu = { navigateTo(AppScreen.HOME) },
+                            onMenu = { navigateTo(AppScreen.SOCIO_ORGANIZATIVOS_LISTA) },
                             onNext = { navigateTo(AppScreen.SOCIO_ORGANIZATIVOS_LISTA) }
                         )
                         AppScreen.SOPA_LETRAS_GEOLOGICOS -> PantallaSopaLetrasGeologicos(
@@ -4551,7 +4551,7 @@ fun SopaLetrasScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 32.dp, start = 16.dp, end = 16.dp, bottom = 16.dp) // Aumenta top de 16.dp a 32.dp
+            .padding(top = 42.dp, start = 16.dp, end = 16.dp, bottom = 16.dp) // Aumenta top de 16.dp a 32.dp
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
