@@ -4461,7 +4461,7 @@ fun PantallaSopaLetrasSocioOrganizativos(
         onBack = onBack,
         titulo = "Sopa de letras:",
         subtitulo = "Fenómenos Socio-Organizativos",
-        pregunta = "Un fenómeno Sanitario-Ecológico lo identificas cuando ocurre un(a):",
+        pregunta = "Un fenómeno Socio-Organizativo lo identificas cuando ocurre un(a):",
         opciones = listOf("Fugas de gas y derrames de sustancias", "Terrorismo y sabotaje", "Tsunami"),
         opcionCorrecta = 1 // "Contaminación de suelo" es la opción correcta (índice 1)
     )
@@ -4551,7 +4551,7 @@ fun SopaLetrasScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(top = 32.dp, start = 16.dp, end = 16.dp, bottom = 16.dp) // Aumenta top de 16.dp a 32.dp
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
