@@ -37,10 +37,12 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,8 +64,11 @@ import androidx.media3.ui.PlayerView
 import kotlin.math.abs
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.foundation.layout.width
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.lifecycle.viewmodel.compose.viewModel
+
 // Enum para manejar las diferentes pantallas de la aplicación
 enum class AppScreen {
     HOME, // Pantalla principal (menú)
@@ -536,6 +541,16 @@ fun PantallaCodigoPostal(onBackToMenu: () -> Unit) {
     var codigoPostalText by remember { mutableStateOf("") }
     var mostrarError by remember { mutableStateOf(false) }
     var mensajeError by remember { mutableStateOf("") }
+    val postalCodeViewModel: PostalCodeViewModel = viewModel()
+
+    // 🔹 Al abrir la pantalla, cargamos el último código postal guardado
+    LaunchedEffect(Unit) {
+        postalCodeViewModel.getPostalCode { saved ->
+            if (!saved.isNullOrEmpty()) {
+                codigoPostalText = saved
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -574,7 +589,7 @@ fun PantallaCodigoPostal(onBackToMenu: () -> Unit) {
 
             OutlinedTextField(
                 value = codigoPostalText,
-                onValueChange = { 
+                onValueChange = {
                     codigoPostalText = it
                     mostrarError = false
                 },
@@ -618,8 +633,8 @@ fun PantallaCodigoPostal(onBackToMenu: () -> Unit) {
                             mensajeError = "El código postal debe tener 5 dígitos"
                         }
                         else -> {
-                            // TODO: Implementar la lógica para guardar en la base de datos
-                            // Por ahora solo mostramos un mensaje de éxito
+                            // ✅ Guardamos en DataStore usando el ViewModel
+                            postalCodeViewModel.savePostalCode(codigoPostalText)
                             mostrarError = false
                             mensajeError = "Código postal guardado correctamente"
                         }
@@ -1171,9 +1186,14 @@ fun OpcionGeologica(
                 modifier = Modifier.weight(1f)
             )
 
+            val ctx = LocalContext.current
+            val scope = rememberCoroutineScope()
             Checkbox(
                 checked = checked,
-                onCheckedChange = onCheckedChange
+                onCheckedChange = {
+                    onCheckedChange(it)
+                    scope.launch { LocalStore.updateSelection(ctx, "geologicos", texto, it) }
+                }
             )
         }
     }
@@ -2124,9 +2144,14 @@ fun OpcionHidrometeorologica(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
+            val ctx = LocalContext.current
+            val scope = rememberCoroutineScope()
             Checkbox(
                 checked = checked,
-                onCheckedChange = onCheckedChange
+                onCheckedChange = {
+                    onCheckedChange(it)
+                    scope.launch { LocalStore.updateSelection(ctx, "hidromet", texto, it) }
+                }
             )
         }
     }
@@ -3020,9 +3045,14 @@ fun OpcionQuimicoTecnologico(
                 modifier = Modifier.weight(1f),
                 maxLines = 3
             )
+            val ctx = LocalContext.current
+            val scope = rememberCoroutineScope()
             Checkbox(
                 checked = checked,
-                onCheckedChange = onCheckedChange
+                onCheckedChange = {
+                    onCheckedChange(it)
+                    scope.launch { LocalStore.updateSelection(ctx, "quimicotec", texto, it) }
+                }
             )
         }
     }
@@ -3869,9 +3899,14 @@ fun OpcionSanitarioEcologico(
                 modifier = Modifier.weight(1f),
                 maxLines = 3
             )
+            val ctx = LocalContext.current
+            val scope = rememberCoroutineScope()
             Checkbox(
                 checked = checked,
-                onCheckedChange = onCheckedChange
+                onCheckedChange = {
+                    onCheckedChange(it)
+                    scope.launch { LocalStore.updateSelection(ctx, "sanitarioeco", texto, it) }
+                }
             )
         }
     }
@@ -4229,9 +4264,14 @@ fun OpcionSocioOrganizativo(
                 modifier = Modifier.weight(1f),
                 maxLines = 3
             )
+            val ctx = LocalContext.current
+            val scope = rememberCoroutineScope()
             Checkbox(
                 checked = checked,
-                onCheckedChange = onCheckedChange
+                onCheckedChange = {
+                    onCheckedChange(it)
+                    scope.launch { LocalStore.updateSelection(ctx, "socioorg", texto, it) }
+                }
             )
         }
     }
@@ -4593,6 +4633,10 @@ fun SopaLetrasScreen(
     opciones: List<String> = emptyList(),
     opcionCorrecta: Int = -1
 ) {
+    // ✅ Instanciamos el ViewModel aquí, una sola vez
+    val sopaLetrasViewModel: SopaLetrasViewModel = viewModel()
+    val ctx = LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -4653,6 +4697,29 @@ fun SopaLetrasScreen(
             return sb.toString().uppercase() to posiciones
         }
 
+        // ✅ Restaurar progreso guardado
+        LaunchedEffect(Unit) {
+            val section = when (subtitulo.lowercase()) {
+                "fenómenos geológicos".lowercase() -> "geologicos"
+                "fenómenos hidrometeorológicos".lowercase() -> "hidromet"
+                "fenómenos químico-tecnológicos".lowercase() -> "quimicotec"
+                "fenómenos sanitario-ecológicos".lowercase() -> "sanitarioeco"
+                "fenómenos socio-organizativos".lowercase() -> "socioorg"
+                else -> ""
+            }
+            if (section.isNotEmpty()) {
+                val saved = LocalStore.getFoundWords(ctx, section)
+                saved.forEach { palabra ->
+                    if (palabra in palabras && palabra !in encontradas) encontradas.add(palabra)
+                }
+                val ans = LocalStore.getAnswer(ctx, section)
+                if (ans != null && ans.isNotBlank()) {
+                    respuestaSeleccionada = ans
+                    mostrarResultado = true
+                }
+            }
+        }
+
         // Matriz de letras con interacción drag
         for ((i, fila) in matriz.withIndex()) {
             Row {
@@ -4665,8 +4732,8 @@ fun SopaLetrasScreen(
                             .size(28.dp)
                             .background(
                                 when {
-                                    seleccionado -> Color(0xFF90CAF9) // Azul claro si está seleccionando
-                                    subrayado -> MaterialTheme.colorScheme.primary // usa color del tema
+                                    seleccionado -> Color(0xFF90CAF9)
+                                    subrayado -> MaterialTheme.colorScheme.primary
                                     else -> MaterialTheme.colorScheme.surfaceVariant
                                 },
                                 RoundedCornerShape(4.dp)
@@ -4683,11 +4750,10 @@ fun SopaLetrasScreen(
                                     onDrag = { change, _ ->
                                         if (inicio != null) {
                                             val localPos = change.position
-                                            val cellSize = 62f // Ajustado para sensibilidad óptima
+                                            val cellSize = 62f
                                             val j1 = (localPos.x / cellSize).toInt().coerceIn(0, matriz[0].size - 1)
                                             val i1 = (localPos.y / cellSize).toInt().coerceIn(0, matriz.size - 1)
                                             val (i0, j0) = inicio!!
-                                            // Priorizar horizontal, luego vertical
                                             val dx = j1 - j0
                                             val dy = i1 - i0
                                             val absDx = abs(dx)
@@ -4724,12 +4790,23 @@ fun SopaLetrasScreen(
                                         if (palabra in palabras && palabra !in encontradas) {
                                             encontradas.add(palabra)
                                             posicionesEncontradas.add(posiciones)
+
+                                            // ✅ Guardamos en ViewModel
+                                            val section = when (subtitulo.lowercase()) {
+                                                "fenómenos geológicos".lowercase() -> "geologicos"
+                                                "fenómenos hidrometeorológicos".lowercase() -> "hidromet"
+                                                "fenómenos químico-tecnológicos".lowercase() -> "quimicotec"
+                                                "fenómenos sanitario-ecológicos".lowercase() -> "sanitarioeco"
+                                                "fenómenos socio-organizativos".lowercase() -> "socioorg"
+                                                else -> ""
+                                            }
+                                            if (section.isNotEmpty()) {
+                                                sopaLetrasViewModel.saveFoundWords(ctx, section, encontradas.toList())
+                                            }
                                         }
                                         seleccion.clear()
                                     },
-                                    onDragCancel = {
-                                        seleccion.clear()
-                                    }
+                                    onDragCancel = { seleccion.clear() }
                                 )
                             },
                         contentAlignment = Alignment.Center
@@ -4746,19 +4823,19 @@ fun SopaLetrasScreen(
 
         Text("Lista de palabras:", fontWeight = FontWeight.SemiBold)
         LazyVerticalGrid(
-            columns = GridCells.Fixed(3), // Cambiado a 3 columnas fijas
+            columns = GridCells.Fixed(3),
             contentPadding = PaddingValues(8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier.height(80.dp)
         ) {
             items(palabras) { palabra ->
-                val tachada = palabra in encontradas // Esta línea mantiene la funcionalidad de tachar
+                val tachada = palabra in encontradas
                 Text(
                     text = palabra,
                     fontSize = 16.sp,
-                    textDecoration = if (tachada) TextDecoration.LineThrough else TextDecoration.None, // Mantiene el tachado
-                    color = if (tachada) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface, // Mantiene el cambio de color
+                    textDecoration = if (tachada) TextDecoration.LineThrough else TextDecoration.None,
+                    color = if (tachada) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
                 )
@@ -4774,15 +4851,12 @@ fun SopaLetrasScreen(
             modifier = Modifier.padding(top = 12.dp, bottom = 16.dp)
         )
 
-        // Sección de pregunta solo si se proporcionan pregunta y opciones
+        // Sección de pregunta
         if (pregunta.isNotBlank() && opciones.isNotEmpty() && opcionCorrecta >= 0) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        MaterialTheme.colorScheme.surfaceVariant,
-                        RoundedCornerShape(8.dp)
-                    )
+                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
                     .padding(16.dp)
             ) {
                 Column {
@@ -4800,7 +4874,6 @@ fun SopaLetrasScreen(
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
 
-                    // Opciones de respuesta
                     opciones.forEach { opcion ->
                         Row(
                             modifier = Modifier
@@ -4808,11 +4881,23 @@ fun SopaLetrasScreen(
                                 .clickable {
                                     respuestaSeleccionada = opcion
                                     mostrarResultado = true
+
+                                    // ✅ Guardamos respuesta en ViewModel
+                                    val section = when (subtitulo.lowercase()) {
+                                        "fenómenos geológicos".lowercase() -> "geologicos"
+                                        "fenómenos hidrometeorológicos".lowercase() -> "hidromet"
+                                        "fenómenos químico-tecnológicos".lowercase() -> "quimicotec"
+                                        "fenómenos sanitario-ecológicos".lowercase() -> "sanitarioeco"
+                                        "fenómenos socio-organizativos".lowercase() -> "socioorg"
+                                        else -> ""
+                                    }
+                                    if (section.isNotEmpty()) {
+                                        sopaLetrasViewModel.saveAnswer(ctx, section, opcion)
+                                    }
                                 }
                                 .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // RadioButton personalizado simple
                             Box(
                                 modifier = Modifier
                                     .size(20.dp)
@@ -4823,22 +4908,14 @@ fun SopaLetrasScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (respuestaSeleccionada == opcion) {
-                                    Text(
-                                        text = "●",
-                                        color = MaterialTheme.colorScheme.surface,
-                                        fontSize = 12.sp
-                                    )
+                                    Text("●", color = MaterialTheme.colorScheme.surface, fontSize = 12.sp)
                                 }
                             }
                             Spacer(modifier = Modifier.padding(horizontal = 8.dp))
-                            Text(
-                                text = opcion,
-                                fontSize = 16.sp
-                            )
+                            Text(text = opcion, fontSize = 16.sp)
                         }
                     }
 
-                    // Mostrar resultado
                     if (mostrarResultado && respuestaSeleccionada != null) {
                         Spacer(modifier = Modifier.height(12.dp))
                         val esCorrecta = respuestaSeleccionada == opciones[opcionCorrecta]
@@ -4852,8 +4929,7 @@ fun SopaLetrasScreen(
                                 .padding(12.dp)
                         ) {
                             Text(
-                                text = if (esCorrecta) "¡Correcto!"
-                                else "Incorrecto. La respuesta correcta es: ${opciones[opcionCorrecta]}",
+                                text = if (esCorrecta) "¡Correcto!" else "Incorrecto. La respuesta correcta es: ${opciones[opcionCorrecta]}",
                                 fontSize = 14.sp,
                                 color = if (esCorrecta) Color(0xFF2E7D32) else Color(0xFFD32F2F),
                                 fontWeight = FontWeight.Medium
