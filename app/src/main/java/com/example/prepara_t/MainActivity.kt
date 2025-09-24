@@ -109,10 +109,6 @@ enum class AppScreen {
     SOPA_LETRAS_QUIMICO_TECNOLOGICO // Pantalla de sopa de letras para químico-tecnológicos
 }
 
-enum class AppTheme {
-    LIGHT, DARK
-}
-
 @Composable
 fun PREPARATTheme(
     isDarkTheme: Boolean = false,
@@ -208,9 +204,7 @@ class MainActivity : ComponentActivity() {
                             onBackToMenu = { navigateTo(AppScreen.HOME) }
                         )
                         AppScreen.CREDITS -> PantallaCreditos(
-                            onBackToMenu = { navigateTo(AppScreen.HOME) },
-                            isDarkTheme = isDarkTheme,
-                            onToggleTheme = { isDarkTheme = !isDarkTheme }
+                            onBackToMenu = { navigateTo(AppScreen.HOME) }
                         )
                         AppScreen.FENOMENOS -> PantallaInicioFenomenos(
                             onBackToMenu = { navigateTo(AppScreen.HOME) },
@@ -653,9 +647,7 @@ fun PantallaCodigoPostal(onBackToMenu: () -> Unit) {
 
 @Composable
 fun PantallaCreditos(
-    onBackToMenu: () -> Unit,
-    isDarkTheme: Boolean = false,
-    onToggleTheme: () -> Unit = {}
+    onBackToMenu: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -2329,7 +2321,6 @@ fun PantallaHeladas(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) 
         titulo = "Heladas",
         subtitulo = "Fenómenos Hidrometeorológicos",
         descripcion = "Las heladas ocurren cuando la temperatura del aire baja a 0°C o menos durante más de cuatro horas.",
-        videoPlaceholder = "[Aquí irá el video de heladas]",
         onBack = onBack,
         onMenu = onMenu,
         onNext = onNext,
@@ -2343,7 +2334,6 @@ fun PantallaNiebla(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
         titulo = "Niebla",
         subtitulo = "Fenómenos Hidrometeorológicos",
         descripcion = "La niebla consiste en gotas de agua suspendidas en el aire, reduciendo la visibilidad a menos de mil metros.",
-        videoPlaceholder = "[Aquí irá el video de niebla]",
         onBack = onBack,
         onMenu = onMenu,
         onNext = onNext,
@@ -2669,7 +2659,6 @@ fun PantallaSequias(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) 
         titulo = "Sequías",
         subtitulo = "Fenómenos Hidrometeorológicos",
         descripcion = "La sequía es un fenómeno que ocurre cuando la precipitación en un lapso es menor que el promedio y puede afectar las actividades humanas.",
-        videoPlaceholder = "[Aquí irá el video de sequías]",
         onBack = onBack,
         onMenu = onMenu,
         onNext = onNext,
@@ -2682,7 +2671,6 @@ fun PantallaInfoHidromet(
     titulo: String,
     subtitulo: String,
     descripcion: String,
-    videoPlaceholder: String,
     onBack: () -> Unit,
     onMenu: () -> Unit,
     onNext: () -> Unit,
@@ -4530,6 +4518,7 @@ fun PantallaSopaLetrasQuimicoTec(
         onBack = onBack,
         titulo = "Sopa de letras:",
         subtitulo = "Fenómenos Químico-Tecnológicos",
+        textoAdicional = "Resuelve de manera correcta la siguiente sopa de letras encontrando las palabras de la lista.",
         pregunta = "Un fenómeno Químico-Tecnológico lo identificas cuando ocurre un(a):",
         opciones = listOf("Helada", "Incendio forestal", "Accidente carretero"),
         opcionCorrecta = 1 // "Incendio forestal" es la opción correcta (índice 1)
@@ -4544,6 +4533,7 @@ fun SopaLetrasScreen(
     onBack: () -> Unit,
     titulo: String = "Sopa de letras:",
     subtitulo: String = "Fenómenos Geológicos",
+    textoAdicional: String = "Resuelve de manera correcta la siguiente sopa de letras encontrando las palabras de la lista.",
     pregunta: String = "",
     opciones: List<String> = emptyList(),
     opcionCorrecta: Int = -1
@@ -4551,7 +4541,7 @@ fun SopaLetrasScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 42.dp, start = 16.dp, end = 16.dp, bottom = 16.dp) // Aumenta top de 16.dp a 32.dp
+            .padding(top = 42.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -4566,7 +4556,13 @@ fun SopaLetrasScreen(
             text = subtitulo,
             fontSize = 20.sp,
             fontWeight = FontWeight.Medium,
-            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 3.dp),
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = textoAdicional,
+            fontSize = 14.sp,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
             textAlign = TextAlign.Center
         )
 
@@ -4576,7 +4572,6 @@ fun SopaLetrasScreen(
         val posicionesEncontradas = remember { mutableStateListOf<List<Pair<Int, Int>>>() }
         var inicio by remember { mutableStateOf<Pair<Int, Int>?>(null) }
         var fin by remember { mutableStateOf<Pair<Int, Int>?>(null) }
-        var seleccionando by remember { mutableStateOf(false) }
 
         // Estados para la pregunta
         var respuestaSeleccionada by remember { mutableStateOf<String?>(null) }
@@ -4629,7 +4624,6 @@ fun SopaLetrasScreen(
                                         fin = pos
                                         seleccion.clear()
                                         seleccion.add(pos)
-                                        seleccionando = true
                                     },
                                     onDrag = { change, _ ->
                                         if (inicio != null) {
@@ -4671,7 +4665,6 @@ fun SopaLetrasScreen(
                                         }
                                     },
                                     onDragEnd = {
-                                        seleccionando = false
                                         val (palabra, posiciones) = palabraSeleccionadaYPosiciones()
                                         if (palabra in palabras && palabra !in encontradas) {
                                             encontradas.add(palabra)
@@ -4680,7 +4673,6 @@ fun SopaLetrasScreen(
                                         seleccion.clear()
                                     },
                                     onDragCancel = {
-                                        seleccionando = false
                                         seleccion.clear()
                                     }
                                 )
