@@ -17,8 +17,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -151,7 +153,10 @@ class MainActivity : ComponentActivity() {
             
             PREPARATTheme(isDarkTheme = isDarkTheme) { // Aplica el tema definido en el proyecto
                 Surface(
-                    modifier = Modifier.fillMaxSize(), // La superficie ocupa toda la pantalla
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .statusBarsPadding()
+                        .navigationBarsPadding(), // Evita que el contenido quede bajo las barras del sistema
                     color = MaterialTheme.colorScheme.background // Usa el color de fondo del tema
                 ) {
                     // Estado mutable para controlar qué pantalla se muestra actualmente
@@ -938,6 +943,16 @@ fun PantallaGeologicos(
         // Video de fenómenos geológicos
         VideoFenomenoGeologico()
         Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "¿Identificas alguno de estos fenómenos geológicos en tu localidad? Marca la casilla de ser así.",
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp)
+        )
+        Spacer(modifier = Modifier.height(12.dp))
         // Botones con logo, texto y checkbox
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -1928,6 +1943,16 @@ fun PantallaRiesgosHidrometeorologicos(
             videoResId = R.raw.fenomenohidro
         )
         Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "¿Identificas alguno de estos fenómenos hidrometeorológicos en tu localidad? Marca la casilla de ser así.",
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp)
+        )
+        Spacer(modifier = Modifier.height(12.dp))
         // Ahora usamos un Column normal para las opciones
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -2828,6 +2853,16 @@ fun PantallaRiesgosQuimicoTecnologicos(
             videoResId = R.raw.fenomenoquimicotec
         )
         Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "¿Identificas alguno de estos fenómenos quimico-tecnológicos en tu localidad? Marca la casilla de ser así.",
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp)
+        )
+        Spacer(modifier = Modifier.height(12.dp))
         // Lista de opciones: todas en un solo Column (sin LazyColumn)
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -3681,6 +3716,16 @@ fun PantallaRiesgosSanitarioEcologicos(
             videoResId = R.raw.fenomenosnitarioeco
         )
         Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "¿Identificas alguno de estos fenómenos sanitario-ecológicos en tu localidad? Marca la casilla de ser así.",
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp)
+        )
+        Spacer(modifier = Modifier.height(12.dp))
         // Lista de temas
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -4041,6 +4086,16 @@ fun PantallaRiesgosSocioOrganizativos(
             videoResId = R.raw.fenomenosocioorg
         )
         Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "¿Identificas alguno de estos fenómenos socio-organizativos en tu localidad? Marca la casilla de ser así.",
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp)
+        )
+        Spacer(modifier = Modifier.height(12.dp))
         // Lista de temas
         Column(
             modifier = Modifier.fillMaxWidth(),
