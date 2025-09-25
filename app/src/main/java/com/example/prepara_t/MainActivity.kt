@@ -68,6 +68,11 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+
 
 // Enum para manejar las diferentes pantallas de la aplicación
 enum class AppScreen {
@@ -738,6 +743,8 @@ fun PantallaCreditos(
     }
 }
 
+
+
 @Composable
 fun PantallaInicioFenomenos(
     onBackToMenu: () -> Unit,
@@ -764,13 +771,16 @@ fun PantallaInicioFenomenos(
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Spacer(modifier = Modifier.height(8.dp))
-            // Descripción de fenómeno
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Descripción
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
-                    .background(MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(12.dp))
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(12.dp)
+                    )
                     .padding(vertical = 12.dp, horizontal = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -781,115 +791,90 @@ fun PantallaInicioFenomenos(
                     textAlign = TextAlign.Center
                 )
             }
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // NATURAL
+            Text(
+                text = "De origen Natural",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
             Spacer(modifier = Modifier.height(8.dp))
-            // --- Nueva distribución en una sola columna ---
-            Column(
-                modifier = Modifier.fillMaxWidth(0.8f),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Text(
+                text = "Los fenómenos naturales son eventos que ocurren por procesos naturales de la Tierra, sin intervención humana.",
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                // Título Natural
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp))
-                        .padding(vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "De origen Natural",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Los fenómenos naturales son eventos que ocurren por procesos naturales de la Tierra, sin intervención humana.",
-                    fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 2.dp)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                BotonMenuConLogoGrande(
+                BotonCircularConTexto(
                     texto = "Geológico",
                     onClick = onNavigateToGeologicos,
-                    iconResId = R.drawable.erupcion, // Ícono de volcán
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
+                    iconResId = R.drawable.erupcion
                 )
-                Spacer(modifier = Modifier.height(10.dp))
-                BotonMenuConLogoGrande(
+                BotonCircularConTexto(
                     texto = "Hidrometeorológico",
                     onClick = onNavigateToHidrometeorologicos,
-                    iconResId = R.drawable.ciclones, // Ícono de ciclón
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
+                    iconResId = R.drawable.ciclones
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                // Título Antrópico
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp))
-                        .padding(vertical = 12.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "De origen Antrópico",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center
-                    )
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "Los fenómenos antrópicos son eventos causados directa o indirectamente por la actividad humana.",
-                    fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 2.dp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                BotonMenuConLogoGrande(
-                    texto = "Químico-Tecnológicos",
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // ANTRÓPICO
+            Text(
+                text = "De origen Antrópico",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Los fenómenos antrópicos son eventos causados directa o indirectamente por la actividad humana.",
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                BotonCircularConTexto(
+                    texto = "Químico-Tecnológico",
                     onClick = onNavigateToQuimicoTecnologicos,
-                    iconResId = R.drawable.explosiones, // Ícono de explosión
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
+                    iconResId = R.drawable.explosiones
                 )
-                Spacer(modifier = Modifier.height(10.dp))
-                BotonMenuConLogoGrande(
+                BotonCircularConTexto(
                     texto = "Sanitario-Ecológicos",
                     onClick = onNavigateToSanitarioEcologicos,
-                    iconResId = R.drawable.contaminaciondelaire, // Ícono de contaminación del aire
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
+                    iconResId = R.drawable.contaminaciondelaire
                 )
-                Spacer(modifier = Modifier.height(10.dp))
-                BotonMenuConLogoGrande(
-                    texto = "Socio-Organizativos",
-                    onClick = onNavigateToSocioOrganizativos,
-                    iconResId = R.drawable.accidentes, // Ícono de accidentes
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                )
-                Spacer(modifier = Modifier.height(64.dp)) // Más espacio para que el botón no quede tapado
             }
-            Spacer(modifier = Modifier.weight(1f))
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            BotonCircularConTexto(
+                texto = "Socio-Organizativos",
+                onClick = onNavigateToSocioOrganizativos,
+                iconResId = R.drawable.concentracion
+            )
+
+            Spacer(modifier = Modifier.height(64.dp))
         }
-        // Botón para regresar al menú principal
+
+        // Botón regresar
         Button(
             onClick = onBackToMenu,
             modifier = Modifier
@@ -904,6 +889,47 @@ fun PantallaInicioFenomenos(
         ) {
             Text("Regresar al menú")
         }
+    }
+}
+
+@Composable
+fun BotonCircularConTexto(
+    texto: String,
+    onClick: () -> Unit,
+    iconResId: Int,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier.width(140.dp)
+    ) {
+        // Imagen circular clickeable
+        Box(
+            modifier = Modifier
+                .size(90.dp)
+                .clip(CircleShape)
+                .clickable { onClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = iconResId),
+                contentDescription = texto,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = texto,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            lineHeight = 16.sp,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
