@@ -919,7 +919,9 @@ fun PantallaGeologicos(
     onNavigateToDeslizamiento: (() -> Unit)? = null,
     onNavigateToHundimientos: (() -> Unit)? = null
 ) {
-    // Estado para los checkboxes
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     val opciones = listOf(
         "Erupción volcánica",
         "Sismo",
@@ -928,7 +930,16 @@ fun PantallaGeologicos(
         "Deslizamiento de laderas",
         "Hundimientos y socavones"
     )
-    val checkedList = remember { mutableStateListOf(false, false, false, false, false, false) }
+
+    // ✅ Estado inicial dinámico
+    val checkedList = remember { mutableStateListOf<Boolean>() }
+
+    // ✅ Cargar datos guardados al iniciar la pantalla (método consistente)
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getSelections(ctx, "geologicos")
+        checkedList.clear()
+        checkedList.addAll(opciones.map { it in saved })
+    }
 
     Column(
         modifier = Modifier
@@ -937,7 +948,7 @@ fun PantallaGeologicos(
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(32.dp)) // Más espacio arriba
+        Spacer(modifier = Modifier.height(32.dp))
         Text(
             text = "Fenómenos Geológicos",
             fontSize = 30.sp,
@@ -955,7 +966,6 @@ fun PantallaGeologicos(
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(16.dp))
-        // Video de fenómenos geológicos
         VideoFenomenoGeologico()
         Spacer(modifier = Modifier.height(16.dp))
         Text(
@@ -968,7 +978,7 @@ fun PantallaGeologicos(
                 .padding(horizontal = 8.dp)
         )
         Spacer(modifier = Modifier.height(12.dp))
-        // Botones con logo, texto y checkbox
+
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -976,8 +986,15 @@ fun PantallaGeologicos(
             opciones.forEachIndexed { idx, texto ->
                 OpcionGeologica(
                     texto = texto,
-                    checked = checkedList[idx],
-                    onCheckedChange = { checkedList[idx] = it },
+                    checked = checkedList.getOrNull(idx) ?: false,
+                    onCheckedChange = { checked ->
+                        // ✅ Actualizar estado local
+                        if (idx < checkedList.size) checkedList[idx] = checked
+                        // ✅ Guardar en DataStore (solo aquí, no duplicado)
+                        scope.launch {
+                            LocalStore.updateSelection(ctx, "geologicos", texto, checked)
+                        }
+                    },
                     onClick = when (texto) {
                         "Erupción volcánica" -> onNavigateToErupcion
                         "Sismo" -> onNavigateToSismo
@@ -991,7 +1008,9 @@ fun PantallaGeologicos(
                 Spacer(modifier = Modifier.height(10.dp))
             }
         }
+
         Spacer(modifier = Modifier.weight(1f))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
@@ -1007,12 +1026,7 @@ fun PantallaGeologicos(
                     .widthIn(min = 120.dp)
                     .height(48.dp)
             ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Regresar", fontSize = 15.sp, textAlign = TextAlign.Center)
             }
             Button(
                 onClick = onActividad,
@@ -1025,12 +1039,7 @@ fun PantallaGeologicos(
                     .widthIn(min = 120.dp)
                     .height(48.dp)
             ) {
-                Text(
-                    text = "Actividad",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Actividad", fontSize = 15.sp, textAlign = TextAlign.Center)
             }
             Button(
                 onClick = onBackToMenu,
@@ -1043,63 +1052,10 @@ fun PantallaGeologicos(
                     .widthIn(min = 120.dp)
                     .height(48.dp)
             ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Menú", fontSize = 15.sp, textAlign = TextAlign.Center)
             }
         }
     }
-}
-
-@Composable
-fun VideoFenomenoGeologico() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(220.dp)
-    ) {
-        VideoPlayerExo(
-            modifier = Modifier.matchParentSize(),
-            videoResId = R.raw.fenomenogeovid
-        )
-    }
-}
-
-@Composable
-fun VideoPlayerExo(
-    modifier: Modifier = Modifier,
-    videoResId: Int
-) {
-    val context = LocalContext.current
-    val exoPlayer = remember(videoResId) {
-        ExoPlayer.Builder(context).build().apply {
-            val uri = "android.resource://${context.packageName}/raw/" +
-                context.resources.getResourceEntryName(videoResId)
-            setMediaItem(MediaItem.fromUri(uri))
-            prepare()
-            playWhenReady = false
-        }
-    }
-    DisposableEffect(Unit) {
-        onDispose { exoPlayer.release() }
-    }
-    AndroidView(
-        factory = { ctx ->
-            PlayerView(ctx).apply {
-                player = exoPlayer
-                useController = true
-                setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                layoutParams = android.view.ViewGroup.LayoutParams(
-                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                    android.view.ViewGroup.LayoutParams.MATCH_PARENT
-                )
-            }
-        },
-        modifier = modifier
-    )
 }
 
 @Composable
@@ -1124,7 +1080,6 @@ fun OpcionGeologica(
                 .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Placeholder para el logo
             Box(
                 modifier = Modifier
                     .size(40.dp),
@@ -1186,17 +1141,61 @@ fun OpcionGeologica(
                 modifier = Modifier.weight(1f)
             )
 
-            val ctx = LocalContext.current
-            val scope = rememberCoroutineScope()
+            // ✅ CORRECCIÓN: Eliminamos la lógica duplicada del Checkbox
+            // Solo queda el onCheckedChange que viene del padre
             Checkbox(
                 checked = checked,
-                onCheckedChange = {
-                    onCheckedChange(it)
-                    scope.launch { LocalStore.updateSelection(ctx, "geologicos", texto, it) }
-                }
+                onCheckedChange = onCheckedChange
             )
         }
     }
+}
+@Composable
+fun VideoFenomenoGeologico() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(220.dp)
+    ) {
+        VideoPlayerExo(
+            modifier = Modifier.matchParentSize(),
+            videoResId = R.raw.fenomenogeovid
+        )
+    }
+}
+
+@Composable
+fun VideoPlayerExo(
+    modifier: Modifier = Modifier,
+    videoResId: Int
+) {
+    val context = LocalContext.current
+    val exoPlayer = remember(videoResId) {
+        ExoPlayer.Builder(context).build().apply {
+            val uri = "android.resource://${context.packageName}/raw/" +
+                context.resources.getResourceEntryName(videoResId)
+            setMediaItem(MediaItem.fromUri(uri))
+            prepare()
+            playWhenReady = false
+        }
+    }
+    DisposableEffect(Unit) {
+        onDispose { exoPlayer.release() }
+    }
+    AndroidView(
+        factory = { ctx ->
+            PlayerView(ctx).apply {
+                player = exoPlayer
+                useController = true
+                setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                layoutParams = android.view.ViewGroup.LayoutParams(
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            }
+        },
+        modifier = modifier
+    )
 }
 
 @Composable
@@ -1918,6 +1917,9 @@ fun PantallaRiesgosHidrometeorologicos(
     onMenu: () -> Unit,
     onNavigate: (AppScreen) -> Unit
 ) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     val opciones = listOf(
         "Ciclones tropicales",
         "Inundaciones",
@@ -1928,7 +1930,16 @@ fun PantallaRiesgosHidrometeorologicos(
         "Frente frío",
         "Sequías"
     )
-    val checkedList = remember { mutableStateListOf(false, false, false, false, false, false, false, false) }
+
+    // ✅ Mantener tu estructura original con mutableStateListOf
+    val checkedList = remember { mutableStateListOf<Boolean>() }
+
+    // ✅ Cargar datos iniciales (igual que antes)
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getSelections(ctx, "hidromet")
+        checkedList.clear()
+        checkedList.addAll(opciones.map { it in saved })
+    }
 
     Column(
         modifier = Modifier
@@ -1937,7 +1948,7 @@ fun PantallaRiesgosHidrometeorologicos(
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(32.dp)) // Más espacio arriba
+        Spacer(modifier = Modifier.height(32.dp))
         Text(
             text = "Fenómenos Hidrometeorológicos",
             fontSize = 30.sp,
@@ -1955,7 +1966,6 @@ fun PantallaRiesgosHidrometeorologicos(
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(16.dp))
-        // Video de fenómenos hidrometeorológicos
         VideoPlayerExo(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1973,7 +1983,7 @@ fun PantallaRiesgosHidrometeorologicos(
                 .padding(horizontal = 8.dp)
         )
         Spacer(modifier = Modifier.height(12.dp))
-        // Ahora usamos un Column normal para las opciones
+
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -1981,8 +1991,15 @@ fun PantallaRiesgosHidrometeorologicos(
             opciones.forEachIndexed { idx, texto ->
                 OpcionHidrometeorologica(
                     texto = texto,
-                    checked = checkedList[idx],
-                    onCheckedChange = { checkedList[idx] = it },
+                    checked = checkedList.getOrNull(idx) ?: false,
+                    onCheckedChange = { checked ->
+                        // ✅ Solo actualizar el estado local
+                        if (idx < checkedList.size) checkedList[idx] = checked
+                        // ✅ Guardar en DataStore (solo aquí, no duplicado)
+                        scope.launch {
+                            LocalStore.updateSelection(ctx, "hidromet", texto, checked)
+                        }
+                    },
                     onClick = {
                         onNavigate(
                             when (idx) {
@@ -2002,7 +2019,8 @@ fun PantallaRiesgosHidrometeorologicos(
                 Spacer(modifier = Modifier.height(10.dp))
             }
         }
-        Spacer(modifier = Modifier.weight(1f)) // Esto mantiene los botones abajo
+
+        Spacer(modifier = Modifier.weight(1f))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
@@ -2018,12 +2036,7 @@ fun PantallaRiesgosHidrometeorologicos(
                     .widthIn(min = 120.dp)
                     .height(48.dp)
             ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Regresar", fontSize = 15.sp, maxLines = 3, textAlign = TextAlign.Center)
             }
             Button(
                 onClick = onActividad,
@@ -2036,12 +2049,7 @@ fun PantallaRiesgosHidrometeorologicos(
                     .widthIn(min = 120.dp)
                     .height(48.dp)
             ) {
-                Text(
-                    text = "Actividad",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Actividad", fontSize = 15.sp, maxLines = 3, textAlign = TextAlign.Center)
             }
             Button(
                 onClick = onMenu,
@@ -2054,12 +2062,7 @@ fun PantallaRiesgosHidrometeorologicos(
                     .widthIn(min = 120.dp)
                     .height(48.dp)
             ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Menú", fontSize = 15.sp, maxLines = 3, textAlign = TextAlign.Center)
             }
         }
     }
@@ -2144,14 +2147,11 @@ fun OpcionHidrometeorologica(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
-            val ctx = LocalContext.current
-            val scope = rememberCoroutineScope()
+            // ✅ CORRECCIÓN: Eliminamos la lógica duplicada del Checkbox
+            // Solo queda el onCheckedChange que viene del padre
             Checkbox(
                 checked = checked,
-                onCheckedChange = {
-                    onCheckedChange(it)
-                    scope.launch { LocalStore.updateSelection(ctx, "hidromet", texto, it) }
-                }
+                onCheckedChange = onCheckedChange
             )
         }
     }
@@ -2834,8 +2834,11 @@ fun PantallaRiesgosQuimicoTecnologicos(
     onBack: () -> Unit,
     onActividad: () -> Unit,
     onMenu: () -> Unit,
-    onNavigate: (AppScreen) -> Unit // Nuevo parámetro para navegación
+    onNavigate: (AppScreen) -> Unit
 ) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     val opciones = listOf(
         "Almacenamiento y transportación de combustibles",
         "Fugas de gas y derrames de sustancias",
@@ -2844,7 +2847,16 @@ fun PantallaRiesgosQuimicoTecnologicos(
         "Incendios forestales",
         "Incendios urbanos"
     )
-    val checkedList = remember { mutableStateListOf(false, false, false, false, false, false) }
+
+    // ✅ Estado inicial con el tamaño correcto
+    val checkedList = remember { mutableStateListOf<Boolean>() }
+
+    // ✅ Cargar datos guardados al iniciar la pantalla
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getSelections(ctx, "quimicotec")
+        checkedList.clear()
+        checkedList.addAll(opciones.map { it in saved })
+    }
 
     Column(
         modifier = Modifier
@@ -2853,7 +2865,7 @@ fun PantallaRiesgosQuimicoTecnologicos(
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(32.dp)) // Más espacio arriba
+        Spacer(modifier = Modifier.height(32.dp))
         Text(
             text = "Fenómenos Químico-Tecnológicos",
             fontSize = 30.sp,
@@ -2888,7 +2900,7 @@ fun PantallaRiesgosQuimicoTecnologicos(
                 .padding(horizontal = 8.dp)
         )
         Spacer(modifier = Modifier.height(12.dp))
-        // Lista de opciones: todas en un solo Column (sin LazyColumn)
+
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -2896,22 +2908,33 @@ fun PantallaRiesgosQuimicoTecnologicos(
             opciones.forEachIndexed { idx, texto ->
                 OpcionQuimicoTecnologico(
                     texto = texto,
-                    checked = checkedList[idx],
-                    onCheckedChange = { checkedList[idx] = it },
-                    onClick = {
-                        when (idx) {
-                            0 -> onNavigate(AppScreen.ALMACENAMIENTO_COMBUSTIBLES)
-                            1 -> onNavigate(AppScreen.FUGAS_GAS)
-                            2 -> onNavigate(AppScreen.RESIDUOS_PELIGROSOS)
-                            3 -> onNavigate(AppScreen.EXPLOSIONES_QT)
-                            4 -> onNavigate(AppScreen.INCENDIOS_FORESTALES_QT)
-                            5 -> onNavigate(AppScreen.INCENDIOS_URBANOS_QT)
+                    checked = checkedList.getOrNull(idx) ?: false,
+                    onCheckedChange = { checked ->
+                        // ✅ Actualizar estado local
+                        if (idx < checkedList.size) checkedList[idx] = checked
+                        // ✅ Guardar en DataStore (solo aquí, no duplicado)
+                        scope.launch {
+                            LocalStore.updateSelection(ctx, "quimicotec", texto, checked)
                         }
+                    },
+                    onClick = {
+                        onNavigate(
+                            when (idx) {
+                                0 -> AppScreen.ALMACENAMIENTO_COMBUSTIBLES
+                                1 -> AppScreen.FUGAS_GAS
+                                2 -> AppScreen.RESIDUOS_PELIGROSOS
+                                3 -> AppScreen.EXPLOSIONES_QT
+                                4 -> AppScreen.INCENDIOS_FORESTALES_QT
+                                5 -> AppScreen.INCENDIOS_URBANOS_QT
+                                else -> AppScreen.QUIMICO_TECNOLOGICOS
+                            }
+                        )
                     }
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
         }
+
         Spacer(modifier = Modifier.weight(1f))
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -2997,7 +3020,6 @@ fun OpcionQuimicoTecnologico(
                 .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Placeholder para el logo
             Box(
                 modifier = Modifier
                     .size(40.dp),
@@ -3045,14 +3067,11 @@ fun OpcionQuimicoTecnologico(
                 modifier = Modifier.weight(1f),
                 maxLines = 3
             )
-            val ctx = LocalContext.current
-            val scope = rememberCoroutineScope()
+            // ✅ CORRECCIÓN: Eliminamos la lógica duplicada del Checkbox
+            // Solo queda el onCheckedChange que viene del padre
             Checkbox(
                 checked = checked,
-                onCheckedChange = {
-                    onCheckedChange(it)
-                    scope.launch { LocalStore.updateSelection(ctx, "quimicotec", texto, it) }
-                }
+                onCheckedChange = onCheckedChange
             )
         }
     }
@@ -3703,8 +3722,11 @@ fun PantallaRiesgosSanitarioEcologicos(
     onBack: () -> Unit,
     onActividad: () -> Unit,
     onMenu: () -> Unit,
-    onNavigate: (String) -> Unit // Puedes cambiar a un enum si lo deseas
+    onNavigate: (String) -> Unit
 ) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     val opciones = listOf(
         "Contaminación del aire",
         "Contaminación del agua",
@@ -3712,7 +3734,16 @@ fun PantallaRiesgosSanitarioEcologicos(
         "Plagas",
         "Epidemias"
     )
-    val checkedList = remember { mutableStateListOf(false, false, false, false, false) }
+
+    // ✅ Estado inicial dinámico
+    val checkedList = remember { mutableStateListOf<Boolean>() }
+
+    // ✅ Cargar datos guardados al iniciar la pantalla
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getSelections(ctx, "sanitarioeco")
+        checkedList.clear()
+        checkedList.addAll(opciones.map { it in saved })
+    }
 
     Column(
         modifier = Modifier
@@ -3721,7 +3752,7 @@ fun PantallaRiesgosSanitarioEcologicos(
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(32.dp)) // Más espacio arriba
+        Spacer(modifier = Modifier.height(32.dp))
         Text(
             text = "Fenómenos Sanitario-Ecológicos",
             fontSize = 30.sp,
@@ -3756,7 +3787,7 @@ fun PantallaRiesgosSanitarioEcologicos(
                 .padding(horizontal = 8.dp)
         )
         Spacer(modifier = Modifier.height(12.dp))
-        // Lista de temas
+
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -3764,13 +3795,21 @@ fun PantallaRiesgosSanitarioEcologicos(
             opciones.forEachIndexed { idx, texto ->
                 OpcionSanitarioEcologico(
                     texto = texto,
-                    checked = checkedList[idx],
-                    onCheckedChange = { checkedList[idx] = it },
+                    checked = checkedList.getOrNull(idx) ?: false,
+                    onCheckedChange = { checked ->
+                        // ✅ Actualizar estado local
+                        if (idx < checkedList.size) checkedList[idx] = checked
+                        // ✅ Guardar en DataStore (solo aquí, no duplicado)
+                        scope.launch {
+                            LocalStore.updateSelection(ctx, "sanitarioeco", texto, checked)
+                        }
+                    },
                     onClick = { onNavigate(texto) }
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
         }
+
         Spacer(modifier = Modifier.weight(1f))
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -3856,7 +3895,6 @@ fun OpcionSanitarioEcologico(
                 .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Logo asociado a cada tema
             Box(
                 modifier = Modifier
                     .size(40.dp),
@@ -3899,14 +3937,11 @@ fun OpcionSanitarioEcologico(
                 modifier = Modifier.weight(1f),
                 maxLines = 3
             )
-            val ctx = LocalContext.current
-            val scope = rememberCoroutineScope()
+            // ✅ CORRECCIÓN: Eliminamos la lógica duplicada del Checkbox
+            // Solo queda el onCheckedChange que viene del padre
             Checkbox(
                 checked = checked,
-                onCheckedChange = {
-                    onCheckedChange(it)
-                    scope.launch { LocalStore.updateSelection(ctx, "sanitarioeco", texto, it) }
-                }
+                onCheckedChange = onCheckedChange
             )
         }
     }
@@ -4082,12 +4117,24 @@ fun PantallaRiesgosSocioOrganizativos(
     onMenu: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     val opciones = listOf(
         "Accidentes carreteros, ferroviarios y aéreos",
         "Concentración masiva de personas",
         "Terrorismo y sabotaje"
     )
-    val checkedList = remember { mutableStateListOf(false, false, false) }
+
+    // ✅ Estado inicial dinámico
+    val checkedList = remember { mutableStateListOf<Boolean>() }
+
+    // ✅ Cargar datos guardados al iniciar la pantalla
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getSelections(ctx, "socioorg")
+        checkedList.clear()
+        checkedList.addAll(opciones.map { it in saved })
+    }
 
     Column(
         modifier = Modifier
@@ -4096,7 +4143,7 @@ fun PantallaRiesgosSocioOrganizativos(
             .padding(horizontal = 24.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(32.dp)) // Más espacio arriba
+        Spacer(modifier = Modifier.height(32.dp))
         Text(
             text = "Fenómenos Socio – Organizativos",
             fontSize = 30.sp,
@@ -4131,7 +4178,7 @@ fun PantallaRiesgosSocioOrganizativos(
                 .padding(horizontal = 8.dp)
         )
         Spacer(modifier = Modifier.height(12.dp))
-        // Lista de temas
+
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -4139,13 +4186,21 @@ fun PantallaRiesgosSocioOrganizativos(
             opciones.forEachIndexed { idx, texto ->
                 OpcionSocioOrganizativo(
                     texto = texto,
-                    checked = checkedList[idx],
-                    onCheckedChange = { checkedList[idx] = it },
+                    checked = checkedList.getOrNull(idx) ?: false,
+                    onCheckedChange = { checked ->
+                        // ✅ Actualizar estado local
+                        if (idx < checkedList.size) checkedList[idx] = checked
+                        // ✅ Guardar en DataStore (solo aquí, no duplicado)
+                        scope.launch {
+                            LocalStore.updateSelection(ctx, "socioorg", texto, checked)
+                        }
+                    },
                     onClick = { onNavigate(texto) }
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
         }
+
         Spacer(modifier = Modifier.weight(1f))
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -4231,7 +4286,6 @@ fun OpcionSocioOrganizativo(
                 .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Logo asociado a cada tema
             Box(
                 modifier = Modifier
                     .size(40.dp),
@@ -4264,14 +4318,11 @@ fun OpcionSocioOrganizativo(
                 modifier = Modifier.weight(1f),
                 maxLines = 3
             )
-            val ctx = LocalContext.current
-            val scope = rememberCoroutineScope()
+            // ✅ CORRECCIÓN: Eliminamos la lógica duplicada del Checkbox
+            // Solo queda el onCheckedChange que viene del padre
             Checkbox(
                 checked = checked,
-                onCheckedChange = {
-                    onCheckedChange(it)
-                    scope.launch { LocalStore.updateSelection(ctx, "socioorg", texto, it) }
-                }
+                onCheckedChange = onCheckedChange
             )
         }
     }

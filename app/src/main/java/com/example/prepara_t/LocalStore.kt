@@ -21,102 +21,243 @@ object LocalStore {
     private fun wordsKey(section: String) = stringPreferencesKey("sopa_words_$section")
     private fun answerKey(section: String) = stringPreferencesKey("sopa_answer_$section")
 
+    // ✅ Constantes para las secciones válidas
+    object Sections {
+        const val GEOLOGICOS = "geologicos"
+        const val HIDROMET = "hidromet"
+        const val QUIMICOTEC = "quimicotec"
+        const val SANITARIOECO = "sanitarioeco"
+        const val SOCIOORG = "socioorg"
+
+        val ALL = listOf(GEOLOGICOS, HIDROMET, QUIMICOTEC, SANITARIOECO, SOCIOORG)
+    }
+
     // ----------------------
     // 📌 Postal Code
     // ----------------------
     suspend fun setPostalCode(context: Context, postal: String) {
-        context.dataStore.edit { it[KEY_POSTAL] = postal }
+        try {
+            context.dataStore.edit { it[KEY_POSTAL] = postal.trim() }
+        } catch (e: Exception) {
+            throw LocalStoreException("Error saving postal code: ${e.message}")
+        }
     }
 
     suspend fun getPostalCode(context: Context): String? {
-        val prefs = context.dataStore.data.first()
-        return prefs[KEY_POSTAL]
+        return try {
+            context.dataStore.data.first()[KEY_POSTAL]
+        } catch (e: Exception) {
+            null
+        }
     }
 
     // ----------------------
     // 📌 Selections (checkbox / opciones)
     // ----------------------
     suspend fun updateSelection(context: Context, section: String, option: String, checked: Boolean) {
-        val key = selectionKey(section)
-        val current = (context.dataStore.data.first()[key] ?: "")
-            .split(',')
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .toMutableSet()
+        if (section.isBlank() || option.isBlank()) return
 
-        if (checked) current.add(option) else current.remove(option)
+        try {
+            val key = selectionKey(section)
+            val current = (context.dataStore.data.first()[key] ?: "")
+                .split(',')
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .toMutableSet()
 
-        context.dataStore.edit { it[key] = current.joinToString(",") }
+            if (checked) {
+                current.add(option.trim())
+            } else {
+                current.remove(option.trim())
+            }
+
+            context.dataStore.edit { it[key] = current.joinToString(",") }
+        } catch (e: Exception) {
+            throw LocalStoreException("Error updating selection for section $section: ${e.message}")
+        }
     }
 
     suspend fun getSelections(context: Context, section: String): Set<String> {
-        val key = selectionKey(section)
-        val raw = context.dataStore.data.first()[key] ?: ""
-        return raw.split(',').map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+        if (section.isBlank()) return emptySet()
+
+        return try {
+            val key = selectionKey(section)
+            val raw = context.dataStore.data.first()[key] ?: ""
+            raw.split(',')
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .toSet()
+        } catch (e: Exception) {
+            emptySet()
+        }
+    }
+
+    // ✅ Nueva función para borrar todas las selecciones de una sección
+    suspend fun clearSelections(context: Context, section: String) {
+        try {
+            val key = selectionKey(section)
+            context.dataStore.edit { it.remove(key) }
+        } catch (e: Exception) {
+            throw LocalStoreException("Error clearing selections for section $section: ${e.message}")
+        }
     }
 
     // ----------------------
     // 📌 Palabras encontradas en la sopa
     // ----------------------
     suspend fun setFoundWords(context: Context, section: String, words: List<String>) {
-        val key = wordsKey(section)
-        context.dataStore.edit { it[key] = words.joinToString(",") }
+        if (section.isBlank()) return
+
+        try {
+            val key = wordsKey(section)
+            val cleanWords = words.map { it.trim() }.filter { it.isNotEmpty() }
+            context.dataStore.edit { it[key] = cleanWords.joinToString(",") }
+        } catch (e: Exception) {
+            throw LocalStoreException("Error saving found words for section $section: ${e.message}")
+        }
     }
 
     suspend fun getFoundWords(context: Context, section: String): Set<String> {
-        val key = wordsKey(section)
-        val raw = context.dataStore.data.first()[key] ?: ""
-        return raw.split(',').map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+        if (section.isBlank()) return emptySet()
+
+        return try {
+            val key = wordsKey(section)
+            val raw = context.dataStore.data.first()[key] ?: ""
+            raw.split(',')
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .toSet()
+        } catch (e: Exception) {
+            emptySet()
+        }
     }
 
     // ----------------------
     // 📌 Respuestas en sopa
     // ----------------------
     suspend fun setAnswer(context: Context, section: String, answer: String) {
-        val key = answerKey(section)
-        context.dataStore.edit { it[key] = answer }
+        if (section.isBlank()) return
+
+        try {
+            val key = answerKey(section)
+            context.dataStore.edit { it[key] = answer.trim() }
+        } catch (e: Exception) {
+            throw LocalStoreException("Error saving answer for section $section: ${e.message}")
+        }
     }
 
     suspend fun getAnswer(context: Context, section: String): String? {
-        val key = answerKey(section)
-        return context.dataStore.data.first()[key]
+        if (section.isBlank()) return null
+
+        return try {
+            val key = answerKey(section)
+            context.dataStore.data.first()[key]
+        } catch (e: Exception) {
+            null
+        }
     }
 
     // ----------------------
-    // 📌 Exportar todo a JSON
+    // 📌 Funciones de utilidad
+    // ----------------------
+    suspend fun hasAnySelections(context: Context, section: String): Boolean {
+        return getSelections(context, section).isNotEmpty()
+    }
+
+    suspend fun getSelectionCount(context: Context, section: String): Int {
+        return getSelections(context, section).size
+    }
+
+    // ✅ Verificar si los datos están completos para una sección
+    suspend fun isSectionComplete(context: Context, section: String): Boolean {
+        val hasSelections = hasAnySelections(context, section)
+        val hasAnswer = !getAnswer(context, section).isNullOrBlank()
+        val hasFoundWords = getFoundWords(context, section).isNotEmpty()
+
+        return hasSelections && (hasAnswer || hasFoundWords)
+    }
+
+    // ----------------------
+    // 📌 Exportar todo a JSON (mejorado)
     // ----------------------
     suspend fun exportAll(context: Context): File {
-        val sections = listOf("geologicos", "hidromet", "quimicotec", "sanitarioeco", "socioorg")
-        val root = JSONObject()
+        return try {
+            val root = JSONObject()
 
-        // Postal Code
-        root.put("postal_code", getPostalCode(context) ?: "")
+            // Postal Code
+            root.put("postal_code", getPostalCode(context) ?: "")
+            root.put("export_timestamp", System.currentTimeMillis())
+            root.put("export_date", SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()))
 
-        // Selections
-        val selections = JSONObject()
-        val sopa = JSONObject()
+            // Selections
+            val selections = JSONObject()
+            val sopa = JSONObject()
+            var totalSelections = 0
 
-        for (s in sections) {
-            selections.put(s, getSelections(context, s).joinToString(","))
+            for (section in Sections.ALL) {
+                val sectionSelections = getSelections(context, section)
+                selections.put(section, sectionSelections.joinToString(","))
+                totalSelections += sectionSelections.size
 
-            val prog = JSONObject()
-            prog.put("found", getFoundWords(context, s).joinToString(","))
-            prog.put("answer", getAnswer(context, s) ?: "")
+                val prog = JSONObject()
+                prog.put("found", getFoundWords(context, section).joinToString(","))
+                prog.put("answer", getAnswer(context, section) ?: "")
+                prog.put("is_complete", isSectionComplete(context, section))
 
-            sopa.put(s, prog)
+                sopa.put(section, prog)
+            }
+
+            root.put("selections", selections)
+            root.put("sopa_progress", sopa)
+            root.put("total_selections", totalSelections)
+
+            // Guardar en archivo con mejor nomenclatura
+            val dir = context.getExternalFilesDir(null) ?: context.filesDir
+            val ts = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val file = File(dir, "preparat_export_$ts.json")
+
+            file.writeText(root.toString(2)) // Formato JSON con indentación
+
+            file
+        } catch (e: Exception) {
+            throw LocalStoreException("Error exporting data: ${e.message}")
         }
+    }
 
-        root.put("selections", selections)
-        root.put("sopa_progress", sopa)
+    // ✅ Nueva función para importar datos (opcional)
+    suspend fun importFromFile(context: Context, file: File) {
+        try {
+            val jsonString = file.readText()
+            val root = JSONObject(jsonString)
 
-        // Guardar en archivo
-        val dir = context.getExternalFilesDir(null) ?: context.filesDir
-        val ts = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-        val file = File(dir, "preparat_export_$ts.json")
-        file.writeText(root.toString())
+            // Importar postal code
+            if (root.has("postal_code")) {
+                setPostalCode(context, root.getString("postal_code"))
+            }
 
-        return file
+            // Importar selections
+            if (root.has("selections")) {
+                val selections = root.getJSONObject("selections")
+                for (section in Sections.ALL) {
+                    if (selections.has(section)) {
+                        val sectionData = selections.getString(section)
+                        // Limpiar sección actual
+                        clearSelections(context, section)
+                        // Importar nuevas selecciones
+                        sectionData.split(",").forEach { option ->
+                            if (option.trim().isNotEmpty()) {
+                                updateSelection(context, section, option.trim(), true)
+                            }
+                        }
+                    }
+                }
+            }
+
+        } catch (e: Exception) {
+            throw LocalStoreException("Error importing data: ${e.message}")
+        }
     }
 }
 
-
+// ✅ Excepción personalizada para mejor manejo de errores
+class LocalStoreException(message: String) : Exception(message)
