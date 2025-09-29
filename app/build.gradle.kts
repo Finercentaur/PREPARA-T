@@ -7,11 +7,12 @@ plugins {
 
 android {
     namespace = "com.example.prepara_t"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.prepara_t"
         minSdk = 24
+        //noinspection OldTargetApi
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -38,6 +39,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        viewBinding = true //
     }
 }
 
@@ -63,4 +65,13 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    //Para acceder al sheets
+    implementation("com.squareup.retrofit2:retrofit:3.0.0")
+    implementation("com.google.code.gson:gson:2.9.1")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+
+
+
 }

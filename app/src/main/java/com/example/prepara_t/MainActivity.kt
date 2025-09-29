@@ -60,6 +60,14 @@ import androidx.media3.ui.PlayerView
 import kotlin.math.abs
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.foundation.layout.width
+import com.example.prepara_t.BD_registros.DirectorioURL
+import com.example.prepara_t.BD_registros.ID_sheet
+import com.example.prepara_t.BD_registros.RetrofitUser
+import com.example.prepara_t.BD_registros.db_REGISTROSData
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlin.coroutines.CoroutineContext
 
 // Enum para manejar las diferentes pantallas de la aplicación
 enum class AppScreen {
@@ -145,7 +153,10 @@ fun PREPARATTheme(
     )
 }
 
+public var codigoPostal: String = ""
 class MainActivity : ComponentActivity() {
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -431,7 +442,30 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
     }
+    fun agregarDatos(categoria: String, seleccion: String){
+        CoroutineScope(Dispatchers.IO).launch{
+
+            val fila = when (categoria) {
+                "GEOLOGICOS" ->           listOf(codigoPostal, seleccion, "", "", "", "")
+                "HIDROMETEOROLOGICOS" ->  listOf(codigoPostal, "", seleccion, "", "", "")
+                "QUIMICO_TECNOLOGICO" ->  listOf(codigoPostal, "", "", seleccion, "", "")
+                "SANITARIO_ECOLOGICOS" -> listOf(codigoPostal, "", "", "", seleccion, "")
+                "SOCIO_ORGANIZATIVOS" ->  listOf(codigoPostal, "", "", "", "", seleccion)
+                else -> listOf(codigoPostal, "", "", "", "", "")
+            }
+
+            val registro = db_REGISTROSData(
+                spreadsheet_id = ID_sheet.google_sheet_id,
+                sheet = ID_sheet.sheet,
+                rows = listOf(fila)
+            )
+
+            val response = RetrofitUser.webService(DirectorioURL.url_post).agregarRegistro(registro)
+        }
+    }
+
 }
 
 /**
@@ -537,6 +571,7 @@ fun PantallaCodigoPostal(onBackToMenu: () -> Unit) {
     var mostrarError by remember { mutableStateOf(false) }
     var mensajeError by remember { mutableStateOf("") }
 
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -618,9 +653,8 @@ fun PantallaCodigoPostal(onBackToMenu: () -> Unit) {
                             mensajeError = "El código postal debe tener 5 dígitos"
                         }
                         else -> {
-                            // TODO: Implementar la lógica para guardar en la base de datos
-                            // Por ahora solo mostramos un mensaje de éxito
-                            mostrarError = false
+                            codigoPostal = codigoPostalText
+                            //mostrarError = false
                             mensajeError = "Código postal guardado correctamente"
                         }
                     }
@@ -905,6 +939,8 @@ fun PantallaGeologicos(
     onNavigateToDeslizamiento: (() -> Unit)? = null,
     onNavigateToHundimientos: (() -> Unit)? = null
 ) {
+    val context = LocalContext.current as MainActivity
+
     // Estado para los checkboxes
     val opciones = listOf(
         "Erupción volcánica",
@@ -965,7 +1001,23 @@ fun PantallaGeologicos(
                     }
                 )
                 Spacer(modifier = Modifier.height(10.dp))
+
             }
+            // Botón de envío
+            Button(onClick = {
+                // Construir la lista de seleccionadas
+                val seleccionadas = opciones.filterIndexed { index, _ -> checkedList[index] }
+                val seleccionadasString = seleccionadas.joinToString(", ")
+
+                context.agregarDatos(
+                    categoria = "GEOLOGICOS",
+                    seleccion = seleccionadasString
+                )
+            }) {
+                Text("Guardar Selección")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
         Spacer(modifier = Modifier.weight(1f))
         Row(
@@ -1889,6 +1941,7 @@ fun PantallaRiesgosHidrometeorologicos(
     onMenu: () -> Unit,
     onNavigate: (AppScreen) -> Unit
 ) {
+    val context = LocalContext.current as MainActivity
     val opciones = listOf(
         "Ciclones tropicales",
         "Inundaciones",
@@ -1962,6 +2015,21 @@ fun PantallaRiesgosHidrometeorologicos(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
+            // Botón de envío
+            Button(onClick = {
+                // Construir la lista de seleccionadas
+                val seleccionadas = opciones.filterIndexed { index, _ -> checkedList[index] }
+                val seleccionadasString = seleccionadas.joinToString(", ")
+
+                context.agregarDatos(
+                    categoria = "HIDROMETEOROLOGICOS",
+                    seleccion = seleccionadasString
+                )
+            }) {
+                Text("Guardar Selección")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
         Spacer(modifier = Modifier.weight(1f)) // Esto mantiene los botones abajo
         Row(
@@ -2796,6 +2864,7 @@ fun PantallaRiesgosQuimicoTecnologicos(
     onMenu: () -> Unit,
     onNavigate: (AppScreen) -> Unit // Nuevo parámetro para navegación
 ) {
+    val context = LocalContext.current as MainActivity
     val opciones = listOf(
         "Almacenamiento y transportación de combustibles",
         "Fugas de gas y derrames de sustancias",
@@ -2861,6 +2930,21 @@ fun PantallaRiesgosQuimicoTecnologicos(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
+            // Botón de envío
+            Button(onClick = {
+                // Construir la lista de seleccionadas
+                val seleccionadas = opciones.filterIndexed { index, _ -> checkedList[index] }
+                val seleccionadasString = seleccionadas.joinToString(", ")
+
+                context.agregarDatos(
+                    categoria = "QUIMICO_TECNOLOGICO",
+                    seleccion = seleccionadasString
+                )
+            }) {
+                Text("Guardar Selección")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
         Spacer(modifier = Modifier.weight(1f))
         Row(
@@ -3650,6 +3734,7 @@ fun PantallaRiesgosSanitarioEcologicos(
     onMenu: () -> Unit,
     onNavigate: (String) -> Unit // Puedes cambiar a un enum si lo deseas
 ) {
+    val context = LocalContext.current as MainActivity
     val opciones = listOf(
         "Contaminación del aire",
         "Contaminación del agua",
@@ -3705,6 +3790,21 @@ fun PantallaRiesgosSanitarioEcologicos(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
+            // Botón de envío
+            Button(onClick = {
+                // Construir la lista de seleccionadas
+                val seleccionadas = opciones.filterIndexed { index, _ -> checkedList[index] }
+                val seleccionadasString = seleccionadas.joinToString(", ")
+
+                context.agregarDatos(
+                    categoria = "SANITARIO_ECOLOGICOS",
+                    seleccion = seleccionadasString
+                )
+            }) {
+                Text("Guardar Selección")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
         Spacer(modifier = Modifier.weight(1f))
         Row(
@@ -4012,6 +4112,7 @@ fun PantallaRiesgosSocioOrganizativos(
     onMenu: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
+    val context = LocalContext.current as MainActivity
     val opciones = listOf(
         "Accidentes carreteros, ferroviarios y aéreos",
         "Concentración masiva de personas",
@@ -4065,6 +4166,21 @@ fun PantallaRiesgosSocioOrganizativos(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
+            // Botón de envío
+            Button(onClick = {
+                // Construir la lista de seleccionadas
+                val seleccionadas = opciones.filterIndexed { index, _ -> checkedList[index] }
+                val seleccionadasString = seleccionadas.joinToString(", ")
+
+                context.agregarDatos(
+                    categoria = "SOCIO_ORGANIZATIVOS",
+                    seleccion = seleccionadasString
+                )
+            }) {
+                Text("Guardar Selección")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
         Spacer(modifier = Modifier.weight(1f))
         Row(
