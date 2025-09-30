@@ -69,10 +69,16 @@ import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 
+import com.example.prepara_t.BD_registros.DirectorioURL
+import com.example.prepara_t.BD_registros.ID_sheet
+import com.example.prepara_t.BD_registros.RetrofitUser
+import com.example.prepara_t.BD_registros.db_REGISTROSData
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlin.coroutines.CoroutineContext
 
 // Enum para manejar las diferentes pantallas de la aplicación
 enum class AppScreen {
@@ -121,6 +127,10 @@ enum class AppScreen {
     SOPA_LETRAS_QUIMICO_TECNOLOGICO // Pantalla de sopa de letras para químico-tecnológicos
 }
 
+enum class AppTheme {
+    LIGHT, DARK
+}
+
 @Composable
 fun PREPARATTheme(
     isDarkTheme: Boolean = false,
@@ -154,7 +164,10 @@ fun PREPARATTheme(
     )
 }
 
+public var codigoPostal: String = ""
 class MainActivity : ComponentActivity() {
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -441,7 +454,30 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
     }
+    fun agregarDatos(categoria: String, seleccion: String){
+        CoroutineScope(Dispatchers.IO).launch{
+
+            val fila = when (categoria) {
+                "GEOLOGICOS" ->           listOf(codigoPostal, seleccion, "", "", "", "")
+                "HIDROMETEOROLOGICOS" ->  listOf(codigoPostal, "", seleccion, "", "", "")
+                "QUIMICO_TECNOLOGICO" ->  listOf(codigoPostal, "", "", seleccion, "", "")
+                "SANITARIO_ECOLOGICOS" -> listOf(codigoPostal, "", "", "", seleccion, "")
+                "SOCIO_ORGANIZATIVOS" ->  listOf(codigoPostal, "", "", "", "", seleccion)
+                else -> listOf(codigoPostal, "", "", "", "", "")
+            }
+
+            val registro = db_REGISTROSData(
+                spreadsheet_id = ID_sheet.google_sheet_id,
+                sheet = ID_sheet.sheet,
+                rows = listOf(fila)
+            )
+
+            val response = RetrofitUser.webService(DirectorioURL.url_post).agregarRegistro(registro)
+        }
+    }
+
 }
 
 /**
@@ -557,6 +593,7 @@ fun PantallaCodigoPostal(onBackToMenu: () -> Unit) {
         }
     }
 
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -641,6 +678,8 @@ fun PantallaCodigoPostal(onBackToMenu: () -> Unit) {
                             // ✅ Guardamos en DataStore usando el ViewModel
                             postalCodeViewModel.savePostalCode(codigoPostalText)
                             mostrarError = false
+                            codigoPostal = codigoPostalText
+                            //mostrarError = false
                             mensajeError = "Código postal guardado correctamente"
                         }
                     }
@@ -709,7 +748,7 @@ fun PantallaCreditos(
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Elis Antonio Aguilar Rios\n" +
-                    "Martin Cruz Muñoz\n" +
+                    "Martín Cruz Muñoz\n" +
                     "Ernesto García Mendoza\n" +
                     "Guillermo Ángeles Herrera\n" +
                     "Kevin Heras Romero\n" +
@@ -948,6 +987,9 @@ fun PantallaGeologicos(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    val context = LocalContext.current as MainActivity
+
+    // Estado para los checkboxes
     val opciones = listOf(
         "Erupción volcánica",
         "Sismo",
@@ -1032,7 +1074,23 @@ fun PantallaGeologicos(
                     }
                 )
                 Spacer(modifier = Modifier.height(10.dp))
+
             }
+            // Botón de envío
+            Button(onClick = {
+                // Construir la lista de seleccionadas
+                val seleccionadas = opciones.filterIndexed { index, _ -> checkedList[index] }
+                val seleccionadasString = seleccionadas.joinToString(", ")
+
+                context.agregarDatos(
+                    categoria = "GEOLOGICOS",
+                    seleccion = seleccionadasString
+                )
+            }) {
+                Text("Guardar Selección")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -1946,6 +2004,7 @@ fun PantallaRiesgosHidrometeorologicos(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    val context = LocalContext.current as MainActivity
     val opciones = listOf(
         "Ciclones tropicales",
         "Inundaciones",
@@ -1992,6 +2051,7 @@ fun PantallaRiesgosHidrometeorologicos(
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(16.dp))
+        // Video de fenómenos hidrometeorológicos
         VideoPlayerExo(
             modifier = Modifier
                 .fillMaxWidth()
@@ -2044,6 +2104,21 @@ fun PantallaRiesgosHidrometeorologicos(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
+            // Botón de envío
+            Button(onClick = {
+                // Construir la lista de seleccionadas
+                val seleccionadas = opciones.filterIndexed { index, _ -> checkedList[index] }
+                val seleccionadasString = seleccionadas.joinToString(", ")
+
+                context.agregarDatos(
+                    categoria = "HIDROMETEOROLOGICOS",
+                    seleccion = seleccionadasString
+                )
+            }) {
+                Text("Guardar Selección")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -2865,6 +2940,7 @@ fun PantallaRiesgosQuimicoTecnologicos(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    val context = LocalContext.current as MainActivity
     val opciones = listOf(
         "Almacenamiento y transportación de combustibles",
         "Fugas de gas y derrames de sustancias",
@@ -2959,6 +3035,21 @@ fun PantallaRiesgosQuimicoTecnologicos(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
+            // Botón de envío
+            Button(onClick = {
+                // Construir la lista de seleccionadas
+                val seleccionadas = opciones.filterIndexed { index, _ -> checkedList[index] }
+                val seleccionadasString = seleccionadas.joinToString(", ")
+
+                context.agregarDatos(
+                    categoria = "QUIMICO_TECNOLOGICO",
+                    seleccion = seleccionadasString
+                )
+            }) {
+                Text("Guardar Selección")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -3753,6 +3844,7 @@ fun PantallaRiesgosSanitarioEcologicos(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    val context = LocalContext.current as MainActivity
     val opciones = listOf(
         "Contaminación del aire",
         "Contaminación del agua",
@@ -3834,6 +3926,21 @@ fun PantallaRiesgosSanitarioEcologicos(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
+            // Botón de envío
+            Button(onClick = {
+                // Construir la lista de seleccionadas
+                val seleccionadas = opciones.filterIndexed { index, _ -> checkedList[index] }
+                val seleccionadasString = seleccionadas.joinToString(", ")
+
+                context.agregarDatos(
+                    categoria = "SANITARIO_ECOLOGICOS",
+                    seleccion = seleccionadasString
+                )
+            }) {
+                Text("Guardar Selección")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -4146,6 +4253,7 @@ fun PantallaRiesgosSocioOrganizativos(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    val context = LocalContext.current as MainActivity
     val opciones = listOf(
         "Accidentes carreteros, ferroviarios y aéreos",
         "Concentración masiva de personas",
@@ -4225,6 +4333,21 @@ fun PantallaRiesgosSocioOrganizativos(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
+            // Botón de envío
+            Button(onClick = {
+                // Construir la lista de seleccionadas
+                val seleccionadas = opciones.filterIndexed { index, _ -> checkedList[index] }
+                val seleccionadasString = seleccionadas.joinToString(", ")
+
+                context.agregarDatos(
+                    categoria = "SOCIO_ORGANIZATIVOS",
+                    seleccion = seleccionadasString
+                )
+            }) {
+                Text("Guardar Selección")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
         Spacer(modifier = Modifier.weight(1f))
