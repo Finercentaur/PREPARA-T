@@ -26,7 +26,7 @@ import androidx.compose.ui.graphics.Color // Asegúrate de que Color esté impor
 
 // Define una paleta de colores para el tema oscuro
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFFBB86FC), // Un púrpura oscuro
+    primary = Color(0xFF009ab9), // Un púrpura oscuro
     secondary = Color(0xFF03DAC5), // Un verde azulado
     tertiary = Color(0xFF3700B3), // Un azul oscuro
     background = Color(0xFF121212), // Fondo oscuro
@@ -40,7 +40,7 @@ private val DarkColorScheme = darkColorScheme(
 
 // Define una paleta de colores para el tema claro
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF6200EE), // Un púrpura
+    primary = Color(0xFF009ab9), // Un púrpura
     secondary = Color(0xFF03DAC5), // Un verde azulado
     tertiary = Color(0xFF3700B3), // Un azul oscuro
     background = Color.White, // Fondo claro

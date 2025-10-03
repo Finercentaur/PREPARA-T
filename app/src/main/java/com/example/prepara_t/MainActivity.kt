@@ -5,6 +5,11 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -12,6 +17,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,13 +27,22 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -39,6 +54,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,32 +74,26 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
-import kotlin.math.abs
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.foundation.layout.width
-import kotlinx.coroutines.launch
-import androidx.compose.foundation.lazy.grid.*
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-
 import com.example.prepara_t.BD_registros.DirectorioURL
 import com.example.prepara_t.BD_registros.ID_sheet
 import com.example.prepara_t.BD_registros.RetrofitUser
 import com.example.prepara_t.BD_registros.db_REGISTROSData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 
 // Enum para manejar las diferentes pantallas de la aplicación
 enum class AppScreen {
     HOME, // Pantalla principal (menú)
-    POSTAL_CODE_INPUT, // Pantalla para ingresar el código postal
     CREDITS, // Nueva pantalla para mostrar los créditos
     FENOMENOS, // Nueva pantalla para el botón 'Inicio'
     GEOLOGICOS, // Nueva pantalla para fenómenos geológicos
@@ -127,18 +137,14 @@ enum class AppScreen {
     SOPA_LETRAS_QUIMICO_TECNOLOGICO // Pantalla de sopa de letras para químico-tecnológicos
 }
 
-enum class AppTheme {
-    LIGHT, DARK
-}
-
 @Composable
 fun PREPARATTheme(
     isDarkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val lightColorScheme = lightColorScheme(
-        primary = Color(0xFF2196F3),
-        secondary = Color(0xFF03A9F4),
+        primary = Color(0xFF009ab9),
+        secondary = Color(0xFF009ab9),
         surface = Color.White,
         onSurface = Color.Black,
         surfaceVariant = Color(0xFFF0F0F0),
@@ -148,8 +154,8 @@ fun PREPARATTheme(
     )
     
     val darkColorScheme = darkColorScheme(
-        primary = Color(0xFF2196F3),
-        secondary = Color(0xFF03A9F4),
+        primary = Color(0xFF009ab9),
+        secondary = Color(0xFF009ab9),
         surface = Color(0xFF424242), // Gris medio para fondo
         onSurface = Color.White,
         surfaceVariant = Color(0xFF616161), // Gris más claro para botones
@@ -222,14 +228,10 @@ class MainActivity : ComponentActivity() {
                     // Lógica para mostrar la pantalla correcta según el estado
                     when (currentScreen) {
                         AppScreen.HOME -> PantallaInicio(
-                            onNavigateToPostalCode = { navigateTo(AppScreen.POSTAL_CODE_INPUT) },
                             onNavigateToCredits = { navigateTo(AppScreen.CREDITS) },
                             onNavigateToFenomenos = { navigateTo(AppScreen.FENOMENOS) },
                             isDarkTheme = isDarkTheme,
                             onToggleTheme = { isDarkTheme = !isDarkTheme }
-                        )
-                        AppScreen.POSTAL_CODE_INPUT -> PantallaCodigoPostal(
-                            onBackToMenu = { navigateTo(AppScreen.HOME) }
                         )
                         AppScreen.CREDITS -> PantallaCreditos(
                             onBackToMenu = { navigateTo(AppScreen.HOME) }
@@ -483,19 +485,31 @@ class MainActivity : ComponentActivity() {
 /**
  * Composable para la pantalla de inicio (menú principal) de la aplicación.
  * @param modifier Modificador para personalizar el diseño del Column.
- * @param onNavigateToPostalCode Callback que se invoca para navegar a la pantalla de código postal.
  * @param onNavigateToCredits Callback que se invoca para navegar a la pantalla de créditos.
  * @param onNavigateToFenomenos Callback que se invoca para navegar a la pantalla de fenómenos.
  */
 @Composable
 fun PantallaInicio(
     modifier: Modifier = Modifier,
-    onNavigateToPostalCode: () -> Unit,
-    onNavigateToCredits: () -> Unit,
     onNavigateToFenomenos: () -> Unit,
+    onNavigateToCredits: () -> Unit,
     isDarkTheme: Boolean = false,
     onToggleTheme: () -> Unit = {}
 ) {
+    var codigoPostalText by remember { mutableStateOf("") }
+    var mostrarError by remember { mutableStateOf(false) }
+    var mensajeError by remember { mutableStateOf("") }
+    val postalCodeViewModel: PostalCodeViewModel = viewModel()
+
+    // Cargamos el código postal guardado al iniciar
+    LaunchedEffect(Unit) {
+        postalCodeViewModel.getPostalCode { saved ->
+            if (!saved.isNullOrEmpty()) {
+                codigoPostalText = saved
+            }
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -513,36 +527,89 @@ fun PantallaInicio(
             textAlign = TextAlign.Center
         )
 
-        // Espacio entre el título y el primer botón
-        Spacer(modifier = Modifier.height(72.dp))
+        Spacer(modifier = Modifier.height(48.dp))
 
-        // Botón "Inicio"
-        BotonMenu(
-            texto = "Inicio",
-            onClick = onNavigateToFenomenos,
-            fontSize = 32.sp, // Tamaño de fuente grande para este botón
-            buttonModifier = Modifier
-                .widthIn(min = 280.dp) // Ancho mínimo del botón
-                .height(80.dp), // Altura del botón
-            backgroundColor = MaterialTheme.colorScheme.surfaceVariant // Color de fondo adaptativo
-        )
+        // Logo de la app
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .background(Color.Transparent, shape = RoundedCornerShape(8.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.logoapp),
+                contentDescription = "Logo de la aplicación",
+                modifier = Modifier.size(120.dp)
+            )
+        }
 
-        // Espacio entre el botón "Inicio" y "Código postal"
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
-        // Botón "Ingresa tu código postal" que ahora navega a la nueva pantalla
-        BotonMenu(
-            texto = "Ingresa tu código postal",
-            onClick = onNavigateToPostalCode, // Invoca el callback de navegación
-            fontSize = 18.sp,
-            buttonModifier = Modifier
+        // Campo de código postal
+        OutlinedTextField(
+            value = codigoPostalText,
+            onValueChange = {
+                codigoPostalText = it
+                mostrarError = false
+            },
+            label = { Text("Ingresa tu código postal") },
+            modifier = Modifier
                 .widthIn(min = 280.dp)
                 .height(60.dp),
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                focusedBorderColor = if (mostrarError) Color.Red else MaterialTheme.colorScheme.outline,
+                unfocusedBorderColor = if (mostrarError) Color.Red else MaterialTheme.colorScheme.outline,
+                disabledBorderColor = MaterialTheme.colorScheme.outline,
+            ),
+            shape = RoundedCornerShape(8.dp)
+        )
+
+        if (mostrarError) {
+            Text(
+                text = mensajeError,
+                color = Color.Red,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Botón "Enviar e Iniciar" - valida, guarda y navega
+        BotonMenu(
+            texto = "Enviar e Iniciar",
+            onClick = {
+                when {
+                    codigoPostalText.isEmpty() -> {
+                        mostrarError = true
+                        mensajeError = "Por favor ingresa un código postal"
+                    }
+                    !codigoPostalText.matches(Regex("^[0-9]{5}$")) -> {
+                        mostrarError = true
+                        mensajeError = "El código postal debe tener 5 dígitos"
+                    }
+                    else -> {
+                        // Guardamos el código postal
+                        postalCodeViewModel.savePostalCode(codigoPostalText)
+                        codigoPostal = codigoPostalText
+                        mostrarError = false
+                        // Navegamos a la pantalla de fenómenos
+                        onNavigateToFenomenos()
+                    }
+                }
+            },
+            fontSize = 20.sp,
+            buttonModifier = Modifier
+                .widthIn(min = 280.dp)
+                .height(70.dp),
             backgroundColor = MaterialTheme.colorScheme.surfaceVariant
         )
 
-        // Espacio entre el botón "Código postal" y "Créditos"
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Botón "Créditos"
         BotonMenu(
@@ -555,8 +622,9 @@ fun PantallaInicio(
             backgroundColor = MaterialTheme.colorScheme.surfaceVariant
         )
 
-        // Espacio y botón para alternar tema
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Botón para alternar tema
         Button(
             onClick = onToggleTheme,
             modifier = Modifier
@@ -564,7 +632,7 @@ fun PantallaInicio(
                 .height(56.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onSurface
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ),
             shape = RoundedCornerShape(8.dp)
         ) {
@@ -573,141 +641,6 @@ fun PantallaInicio(
     }
 }
 
-/**
- * Nuevo Composable para la pantalla de ingreso del código postal.
- * @param onBackToMenu Callback que se invoca para regresar a la pantalla de inicio.
- */
-@Composable
-fun PantallaCodigoPostal(onBackToMenu: () -> Unit) {
-    var codigoPostalText by remember { mutableStateOf("") }
-    var mostrarError by remember { mutableStateOf(false) }
-    var mensajeError by remember { mutableStateOf("") }
-    val postalCodeViewModel: PostalCodeViewModel = viewModel()
-
-    // 🔹 Al abrir la pantalla, cargamos el último código postal guardado
-    LaunchedEffect(Unit) {
-        postalCodeViewModel.getPostalCode { saved ->
-            if (!saved.isNullOrEmpty()) {
-                codigoPostalText = saved
-            }
-        }
-    }
-
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = "Fenómenos naturales y antrópicos",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(48.dp))
-
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .background(Color.Transparent, shape = RoundedCornerShape(8.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.logoapp),
-                    contentDescription = "Icono de casa",
-                    modifier = Modifier.size(480.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(48.dp))
-
-            OutlinedTextField(
-                value = codigoPostalText,
-                onValueChange = {
-                    codigoPostalText = it
-                    mostrarError = false
-                },
-                label = { Text("Ingresa tu código postal") },
-                modifier = Modifier
-                    .widthIn(min = 280.dp)
-                    .height(60.dp),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    focusedBorderColor = if (mostrarError) Color.Red else Color.Transparent,
-                    unfocusedBorderColor = if (mostrarError) Color.Red else Color.Transparent,
-                    disabledBorderColor = Color.Transparent,
-                ),
-                shape = RoundedCornerShape(8.dp)
-            )
-
-            if (mostrarError) {
-                Text(
-                    text = mensajeError,
-                    color = Color.Red,
-                    fontSize = 14.sp,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            BotonMenu(
-                texto = "Enviar",
-                onClick = {
-                    when {
-                        codigoPostalText.isEmpty() -> {
-                            mostrarError = true
-                            mensajeError = "Por favor ingresa un código postal"
-                        }
-                        !codigoPostalText.matches(Regex("^[0-9]{5}$")) -> {
-                            mostrarError = true
-                            mensajeError = "El código postal debe tener 5 dígitos"
-                        }
-                        else -> {
-                            // ✅ Guardamos en DataStore usando el ViewModel
-                            postalCodeViewModel.savePostalCode(codigoPostalText)
-                            mostrarError = false
-                            codigoPostal = codigoPostalText
-                            //mostrarError = false
-                            mensajeError = "Código postal guardado correctamente"
-                        }
-                    }
-                },
-                fontSize = 18.sp,
-                buttonModifier = Modifier
-                    .widthIn(min = 280.dp)
-                    .height(60.dp),
-                backgroundColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-        }
-
-        Button(
-            onClick = onBackToMenu,
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp),
-            shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = MaterialTheme.colorScheme.onSurface
-            ),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-        ) {
-            Text("Regresar al menú")
-        }
-    }
-}
 
 @Composable
 fun PantallaCreditos(
@@ -782,8 +715,6 @@ fun PantallaCreditos(
     }
 }
 
-
-
 @Composable
 fun PantallaInicioFenomenos(
     onBackToMenu: () -> Unit,
@@ -793,6 +724,10 @@ fun PantallaInicioFenomenos(
     onNavigateToSanitarioEcologicos: () -> Unit = {},
     onNavigateToSocioOrganizativos: () -> Unit = {}
 ) {
+    var expandedFenomenos by remember { mutableStateOf(false) }
+    var expandedNatural by remember { mutableStateOf(false) }
+    var expandedAntropico by remember { mutableStateOf(false) }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -802,118 +737,406 @@ fun PantallaInicioFenomenos(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(28.dp))
-            Text(
-                text = "Fenómenos",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(16.dp))
 
-            // Descripción
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.9f)
-                    .background(
-                        MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(12.dp)
+            // Título principal con ícono de información
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Fenómenos",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                IconButton(
+                    onClick = { expandedFenomenos = !expandedFenomenos },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = if (expandedFenomenos) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = "Más información",
+                        tint = MaterialTheme.colorScheme.primary
                     )
-                    .padding(vertical = 12.dp, horizontal = 12.dp),
-                contentAlignment = Alignment.Center
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Descripción desplegable de fenómeno
+            AnimatedVisibility(
+                visible = expandedFenomenos,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
             ) {
                 Text(
                     text = "Un fenómeno es cualquier evento o proceso que ocurre en la naturaleza o en la sociedad y que puede tener un impacto significativo en el medio ambiente, las personas o las estructuras. Los fenómenos pueden ser:",
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .padding(vertical = 8.dp, horizontal = 12.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(20.dp))
 
-            // NATURAL
-            Text(
-                text = "De origen Natural",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Los fenómenos naturales son eventos que ocurren por procesos naturales de la Tierra, sin intervención humana.",
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+            // --- Nueva distribución en una sola columna ---
+            Column(
+                modifier = Modifier.fillMaxWidth(0.8f),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                BotonCircularConTexto(
-                    texto = "Geológico",
-                    onClick = onNavigateToGeologicos,
-                    iconResId = R.drawable.erupcion
-                )
-                BotonCircularConTexto(
-                    texto = "Hidrometeorológico",
-                    onClick = onNavigateToHidrometeorologicos,
-                    iconResId = R.drawable.ciclones
-                )
+                // Título Natural con ícono desplegable
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp))
+                        .padding(vertical = 8.dp, horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Spacer(modifier = Modifier.width(32.dp))
+                    Text(
+                        text = "De origen Natural",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(
+                        onClick = { expandedNatural = !expandedNatural },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (expandedNatural) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = "Más información",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Descripción desplegable Natural
+                AnimatedVisibility(
+                    visible = expandedNatural,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Text(
+                        text = "Los fenómenos naturales son eventos que ocurren por procesos naturales de la Tierra, sin intervención humana.",
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 2.dp, vertical = 8.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(80.dp)
+                        .clickable { onNavigateToGeologicos() },
+                    shape = RoundedCornerShape(16.dp),
+                    shadowElevation = 4.dp,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.06f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.erupcion),
+                                contentDescription = "Geológico",
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Geológico",
+                            modifier = Modifier.weight(1f),
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Start,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(80.dp)
+                        .clickable { onNavigateToHidrometeorologicos() },
+                    shape = RoundedCornerShape(16.dp),
+                    shadowElevation = 4.dp,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.06f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ciclones),
+                                contentDescription = "Hidrometeorológico",
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Hidrometeorológico",
+                            modifier = Modifier.weight(1f),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Start,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Título Antrópico con ícono desplegable
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(16.dp))
+                        .padding(vertical = 12.dp, horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Spacer(modifier = Modifier.width(32.dp))
+                    Text(
+                        text = "De origen Antrópico",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(
+                        onClick = { expandedAntropico = !expandedAntropico },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (expandedAntropico) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = "Más información",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Descripción desplegable Antrópico
+                AnimatedVisibility(
+                    visible = expandedAntropico,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Text(
+                        text = "Los fenómenos antrópicos son eventos causados directa o indirectamente por la actividad humana.",
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 2.dp, vertical = 8.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(80.dp)
+                        .clickable { onNavigateToQuimicoTecnologicos() },
+                    shape = RoundedCornerShape(16.dp),
+                    shadowElevation = 4.dp,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.06f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.explosiones),
+                                contentDescription = "Químico-Tecnológico",
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Químico-Tecnológico",
+                            modifier = Modifier.weight(1f),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Start,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(80.dp)
+                        .clickable { onNavigateToSanitarioEcologicos() },
+                    shape = RoundedCornerShape(16.dp),
+                    shadowElevation = 4.dp,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.06f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.contaminaciondelaire),
+                                contentDescription = "Sanitario-Ecológicos",
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Sanitario-Ecológicos",
+                            modifier = Modifier.weight(1f),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Start,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(80.dp)
+                        .clickable { onNavigateToSocioOrganizativos() },
+                    shape = RoundedCornerShape(16.dp),
+                    shadowElevation = 4.dp,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.06f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.accidentes),
+                                contentDescription = "Socio-Organizativos",
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Socio-Organizativos",
+                            modifier = Modifier.weight(1f),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Start,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(64.dp))
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // ANTRÓPICO
-            Text(
-                text = "De origen Antrópico",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Los fenómenos antrópicos son eventos causados directa o indirectamente por la actividad humana.",
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                BotonCircularConTexto(
-                    texto = "Químico-Tecnológico",
-                    onClick = onNavigateToQuimicoTecnologicos,
-                    iconResId = R.drawable.explosiones
-                )
-                BotonCircularConTexto(
-                    texto = "Sanitario-Ecológicos",
-                    onClick = onNavigateToSanitarioEcologicos,
-                    iconResId = R.drawable.contaminaciondelaire
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            BotonCircularConTexto(
-                texto = "Socio-Organizativos",
-                onClick = onNavigateToSocioOrganizativos,
-                iconResId = R.drawable.concentracion
-            )
-
-            Spacer(modifier = Modifier.height(64.dp))
+            Spacer(modifier = Modifier.weight(1f))
         }
 
-        // Botón regresar
+        // Botón para regresar al menú principal
         Button(
             onClick = onBackToMenu,
             modifier = Modifier
@@ -928,47 +1151,6 @@ fun PantallaInicioFenomenos(
         ) {
             Text("Regresar al menú")
         }
-    }
-}
-
-@Composable
-fun BotonCircularConTexto(
-    texto: String,
-    onClick: () -> Unit,
-    iconResId: Int,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.width(140.dp)
-    ) {
-        // Imagen circular clickeable
-        Box(
-            modifier = Modifier
-                .size(90.dp)
-                .clip(CircleShape)
-                .clickable { onClick() },
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                painter = painterResource(id = iconResId),
-                contentDescription = texto,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = texto,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-            lineHeight = 16.sp,
-            modifier = Modifier.fillMaxWidth()
-        )
     }
 }
 
@@ -1036,15 +1218,6 @@ fun PantallaGeologicos(
         Spacer(modifier = Modifier.height(16.dp))
         VideoFenomenoGeologico()
         Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "¿Identificas alguno de estos fenómenos geológicos en tu localidad? Marca la casilla de ser así.",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-        )
         Spacer(modifier = Modifier.height(12.dp))
 
         Column(
@@ -1306,45 +1479,6 @@ fun BotonMenu(
     }
 }
 
-@Composable
-fun BotonMenuConLogoGrande(
-    texto: String,
-    onClick: () -> Unit,
-    iconResId: Int, // Nuevo parámetro para el recurso del ícono
-    modifier: Modifier = Modifier
-) {
-    Button(
-        onClick = onClick,
-        modifier = modifier
-            .widthIn(min = 220.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-                                contentColor = MaterialTheme.colorScheme.onSurface
-        ),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start
-        ) {
-            // Logo cuadrado grande
-            Box(
-                modifier = Modifier
-                    .size(48.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(id = iconResId),
-                    contentDescription = texto,
-                    modifier = Modifier.size(36.dp)
-                )
-            }
-            Spacer(modifier = Modifier.widthIn(min = 8.dp)) // Reducido de 16dp a 8dp
-            Text(text = texto, fontSize = 16.sp, maxLines = 1, fontWeight = FontWeight.Bold)
-        }
-    }
-}
 
 @Composable
 fun PantallaErupcionVolcanica(
@@ -2059,15 +2193,6 @@ fun PantallaRiesgosHidrometeorologicos(
             videoResId = R.raw.fenomenohidro
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "¿Identificas alguno de estos fenómenos hidrometeorológicos en tu localidad? Marca la casilla de ser así.",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-        )
         Spacer(modifier = Modifier.height(12.dp))
 
         Column(
@@ -2257,6 +2382,8 @@ fun OpcionHidrometeorologica(
         }
     }
 }
+
+
 
 @Composable
 fun PantallaCiclonesTropicales(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
@@ -2992,15 +3119,6 @@ fun PantallaRiesgosQuimicoTecnologicos(
             videoResId = R.raw.fenomenoquimicotec
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "¿Identificas alguno de estos fenómenos quimico-tecnológicos en tu localidad? Marca la casilla de ser así.",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-        )
         Spacer(modifier = Modifier.height(12.dp))
 
         Column(
@@ -3895,15 +4013,6 @@ fun PantallaRiesgosSanitarioEcologicos(
             videoResId = R.raw.fenomenosnitarioeco
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "¿Identificas alguno de estos fenómenos sanitario-ecológicos en tu localidad? Marca la casilla de ser así.",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-        )
         Spacer(modifier = Modifier.height(12.dp))
 
         Column(
@@ -4302,15 +4411,6 @@ fun PantallaRiesgosSocioOrganizativos(
             videoResId = R.raw.fenomenosocioorg
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "¿Identificas alguno de estos fenómenos socio-organizativos en tu localidad? Marca la casilla de ser así.",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-        )
         Spacer(modifier = Modifier.height(12.dp))
 
         Column(
@@ -4617,26 +4717,6 @@ fun PantallaInfoSocioOrg(
                 )
             }
         }
-    }
-}
-
-// Preview para la pantalla de inicio
-@Preview(showBackground = true)
-@Composable
-fun PantallaInicioPreview() {
-    PREPARATTheme {
-        // Se pasa un lambda vacío para la navegación en el preview
-        PantallaInicio(onNavigateToPostalCode = {}, onNavigateToCredits = {}, onNavigateToFenomenos = {})
-    }
-}
-
-// Preview para la nueva pantalla de código postal
-@Preview(showBackground = true)
-@Composable
-fun PantallaCodigoPostalPreview() {
-    PREPARATTheme {
-        // Se pasa un lambda vacío para el botón de regreso en el preview
-        PantallaCodigoPostal(onBackToMenu = {})
     }
 }
 
