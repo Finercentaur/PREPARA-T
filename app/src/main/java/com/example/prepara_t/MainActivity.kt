@@ -90,10 +90,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.ImageLoader
+import coil.decode.GifDecoder
 
 // Enum para manejar las diferentes pantallas de la aplicación
 enum class AppScreen {
-    HOME, // Pantalla principal (menú)
+    HOME, // Pantalla principbal (menú)
     CREDITS, // Nueva pantalla para mostrar los créditos
     FENOMENOS, // Nueva pantalla para el botón 'Inicio'
     GEOLOGICOS, // Nueva pantalla para fenómenos geológicos
@@ -1153,7 +1157,6 @@ fun PantallaInicioFenomenos(
         }
     }
 }
-
 @Composable
 fun PantallaGeologicos(
     onBackToFenomenos: () -> Unit,
@@ -1170,6 +1173,9 @@ fun PantallaGeologicos(
     val scope = rememberCoroutineScope()
 
     val context = LocalContext.current as MainActivity
+
+    // ✅ Estado para el desplegable de la descripción
+    var expandedGeologicos by remember { mutableStateOf(false) }
 
     // Estado para los checkboxes
     val opciones = listOf(
@@ -1199,22 +1205,52 @@ fun PantallaGeologicos(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = "Fenómenos Geológicos",
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
+
+        // ✅ Título con ícono desplegable
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Fenómenos Geológicos",
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            IconButton(
+                onClick = { expandedGeologicos = !expandedGeologicos },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = if (expandedGeologicos) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Más información",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Los fenómenos geológicos son los que causan mayores afectaciones naturales y se clasifican en internos, externos y por intervención humana.",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
+
+        // ✅ Descripción desplegable
+        AnimatedVisibility(
+            visible = expandedGeologicos,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Text(
+                text = "Los fenómenos geológicos son los que causan mayores afectaciones naturales y se clasifican en internos, externos y por intervención humana.",
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 12.dp)
+            )
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
         VideoFenomenoGeologico()
         Spacer(modifier = Modifier.height(16.dp))
@@ -1280,10 +1316,19 @@ fun PantallaGeologicos(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
-                    .widthIn(min = 120.dp)
-                    .height(48.dp)
+                    .weight(1f)
+                    .padding(horizontal = 4.dp)
+                    .height(48.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
-                Text("Regresar", fontSize = 15.sp, textAlign = TextAlign.Center)
+                Text(
+                    text = "Regresar",
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    minLines = 1,
+                    lineHeight = 16.sp
+                )
             }
             Button(
                 onClick = onActividad,
@@ -1293,10 +1338,19 @@ fun PantallaGeologicos(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
-                    .widthIn(min = 120.dp)
-                    .height(48.dp)
+                    .weight(1f)
+                    .padding(horizontal = 4.dp)
+                    .height(48.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
-                Text("Actividad", fontSize = 15.sp, textAlign = TextAlign.Center)
+                Text(
+                    text = "Actividad",
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    minLines = 1,
+                    lineHeight = 16.sp
+                )
             }
             Button(
                 onClick = onBackToMenu,
@@ -1306,10 +1360,19 @@ fun PantallaGeologicos(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
-                    .widthIn(min = 120.dp)
-                    .height(48.dp)
+                    .weight(1f)
+                    .padding(horizontal = 4.dp)
+                    .height(48.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
-                Text("Menú", fontSize = 15.sp, textAlign = TextAlign.Center)
+                Text(
+                    text = "Menú",
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    minLines = 1,
+                    lineHeight = 16.sp
+                )
             }
         }
     }
@@ -2139,6 +2202,10 @@ fun PantallaRiesgosHidrometeorologicos(
     val scope = rememberCoroutineScope()
 
     val context = LocalContext.current as MainActivity
+
+    // ✅ Estado para el desplegable de la descripción
+    var expandedHidrometeorologicos by remember { mutableStateOf(false) }
+
     val opciones = listOf(
         "Ciclones tropicales",
         "Inundaciones",
@@ -2168,22 +2235,61 @@ fun PantallaRiesgosHidrometeorologicos(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = "Fenómenos Hidrometeorológicos",
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "Los fenómenos hidrometeorológicos son agentes perturbadores originados por fenómenos atmosféricos naturales que pueden generar afectaciones en diversas regiones del territorio.",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
+
+        // ✅ Título con ícono desplegable
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(modifier = Modifier.width(32.dp))
+            Text(
+                text = "Fenómenos Hidrometeorológicos",
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 30.sp
+            )
+            IconButton(
+                onClick = { expandedHidrometeorologicos = !expandedHidrometeorologicos },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = if (expandedHidrometeorologicos) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Más información",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // ✅ Descripción desplegable
+        AnimatedVisibility(
+            visible = expandedHidrometeorologicos,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Text(
+                text = "Los fenómenos hidrometeorológicos son agentes perturbadores originados por fenómenos atmosféricos naturales que pueden generar afectaciones en diversas regiones del territorio.",
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 12.dp)
+            )
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
         // Video de fenómenos hidrometeorológicos
         VideoPlayerExo(
@@ -2248,7 +2354,9 @@ fun PantallaRiesgosHidrometeorologicos(
 
         Spacer(modifier = Modifier.weight(1f))
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
@@ -2259,10 +2367,17 @@ fun PantallaRiesgosHidrometeorologicos(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
-                    .widthIn(min = 120.dp)
+                    .weight(1f)
                     .height(48.dp)
+                    .padding(horizontal = 4.dp)
             ) {
-                Text("Regresar", fontSize = 15.sp, maxLines = 3, textAlign = TextAlign.Center)
+                Text(
+                    "Regresar",
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
             }
             Button(
                 onClick = onActividad,
@@ -2272,10 +2387,17 @@ fun PantallaRiesgosHidrometeorologicos(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
-                    .widthIn(min = 120.dp)
+                    .weight(1f)
                     .height(48.dp)
+                    .padding(horizontal = 4.dp)
             ) {
-                Text("Actividad", fontSize = 15.sp, maxLines = 3, textAlign = TextAlign.Center)
+                Text(
+                    "Actividad",
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
             }
             Button(
                 onClick = onMenu,
@@ -2285,10 +2407,17 @@ fun PantallaRiesgosHidrometeorologicos(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
-                    .widthIn(min = 120.dp)
+                    .weight(1f)
                     .height(48.dp)
+                    .padding(horizontal = 4.dp)
             ) {
-                Text("Menú", fontSize = 15.sp, maxLines = 3, textAlign = TextAlign.Center)
+                Text(
+                    "Menú",
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
             }
         }
     }
@@ -3056,7 +3185,6 @@ fun PantallaInfoHidromet(
         }
     }
 }
-
 @Composable
 fun PantallaRiesgosQuimicoTecnologicos(
     onBack: () -> Unit,
@@ -3068,6 +3196,10 @@ fun PantallaRiesgosQuimicoTecnologicos(
     val scope = rememberCoroutineScope()
 
     val context = LocalContext.current as MainActivity
+
+    // ✅ Estado para el desplegable de la descripción
+    var expandedQuimicoTec by remember { mutableStateOf(false) }
+
     val opciones = listOf(
         "Almacenamiento y transportación de combustibles",
         "Fugas de gas y derrames de sustancias",
@@ -3095,22 +3227,79 @@ fun PantallaRiesgosQuimicoTecnologicos(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = "Fenómenos Químico-Tecnológicos",
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "Los fenómenos químicos – tecnológicos son aquellos provocados por actividades industriales, comerciales y de servicios.",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
+
+        // ✅ Cálculo del tamaño responsivo usando recursos
+        val resources = LocalContext.current.resources
+        val screenWidthDp = resources.displayMetrics.widthPixels / resources.displayMetrics.density
+
+        val titleFontSize = when {
+            screenWidthDp < 360 -> 18.sp
+            screenWidthDp < 412 -> 20.sp
+            screenWidthDp < 600 -> 22.sp
+            else -> 26.sp
+        }
+
+        val lineHeightSize = when {
+            screenWidthDp < 360 -> 22.sp
+            screenWidthDp < 412 -> 24.sp
+            screenWidthDp < 600 -> 26.sp
+            else -> 30.sp
+        }
+
+        // ✅ Título con ícono desplegable
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(modifier = Modifier.width(32.dp))
+            Text(
+                text = "Fenómenos Químico-Tecnológicos",
+                fontSize = titleFontSize,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = lineHeightSize
+            )
+            IconButton(
+                onClick = { expandedQuimicoTec = !expandedQuimicoTec },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = if (expandedQuimicoTec) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Más información",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // ✅ Descripción desplegable
+        AnimatedVisibility(
+            visible = expandedQuimicoTec,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Text(
+                text = "Los fenómenos químicos – tecnológicos son aquellos provocados por actividades industriales, comerciales y de servicios.",
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 12.dp)
+            )
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
         VideoPlayerExo(
             modifier = Modifier
@@ -3171,8 +3360,18 @@ fun PantallaRiesgosQuimicoTecnologicos(
         }
 
         Spacer(modifier = Modifier.weight(1f))
+
+        // ✅ Cálculo del tamaño responsivo para botones
+        val buttonFontSize = when {
+            screenWidthDp < 360 -> 12.sp
+            screenWidthDp < 412 -> 13.sp
+            else -> 14.sp
+        }
+
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
@@ -3183,13 +3382,15 @@ fun PantallaRiesgosQuimicoTecnologicos(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
-                    .widthIn(min = 120.dp)
+                    .weight(1f)
                     .height(48.dp)
+                    .padding(horizontal = 4.dp)
             ) {
                 Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
+                    "Regresar",
+                    fontSize = buttonFontSize,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center
                 )
             }
@@ -3201,13 +3402,15 @@ fun PantallaRiesgosQuimicoTecnologicos(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
-                    .widthIn(min = 120.dp)
+                    .weight(1f)
                     .height(48.dp)
+                    .padding(horizontal = 4.dp)
             ) {
                 Text(
-                    text = "Actividad",
-                    fontSize = 15.sp,
-                    maxLines = 3,
+                    "Actividad",
+                    fontSize = buttonFontSize,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center
                 )
             }
@@ -3219,13 +3422,15 @@ fun PantallaRiesgosQuimicoTecnologicos(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
-                    .widthIn(min = 120.dp)
+                    .weight(1f)
                     .height(48.dp)
+                    .padding(horizontal = 4.dp)
             ) {
                 Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
+                    "Menú",
+                    fontSize = buttonFontSize,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center
                 )
             }
@@ -3963,6 +4168,10 @@ fun PantallaRiesgosSanitarioEcologicos(
     val scope = rememberCoroutineScope()
 
     val context = LocalContext.current as MainActivity
+
+    // ✅ Estado para el desplegable de la descripción
+    var expandedSanitarioEco by remember { mutableStateOf(false) }
+
     val opciones = listOf(
         "Contaminación del aire",
         "Contaminación del agua",
@@ -3989,22 +4198,79 @@ fun PantallaRiesgosSanitarioEcologicos(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = "Fenómenos Sanitario-Ecológicos",
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "Los fenómenos sanitario – ecológicos son aquellos donde un agente perturbador afectan a los seres vivos y el medio ambiente.",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
+
+        // ✅ Cálculo del tamaño responsivo
+        val resources = LocalContext.current.resources
+        val screenWidthDp = resources.displayMetrics.widthPixels / resources.displayMetrics.density
+
+        val titleFontSize = when {
+            screenWidthDp < 360 -> 18.sp
+            screenWidthDp < 412 -> 20.sp
+            screenWidthDp < 600 -> 22.sp
+            else -> 26.sp
+        }
+
+        val lineHeightSize = when {
+            screenWidthDp < 360 -> 22.sp
+            screenWidthDp < 412 -> 24.sp
+            screenWidthDp < 600 -> 26.sp
+            else -> 30.sp
+        }
+
+        // ✅ Título con ícono desplegable
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(modifier = Modifier.width(32.dp))
+            Text(
+                text = "Fenómenos Sanitario-Ecológicos",
+                fontSize = titleFontSize,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = lineHeightSize
+            )
+            IconButton(
+                onClick = { expandedSanitarioEco = !expandedSanitarioEco },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = if (expandedSanitarioEco) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Más información",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // ✅ Descripción desplegable
+        AnimatedVisibility(
+            visible = expandedSanitarioEco,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Text(
+                text = "Los fenómenos sanitario – ecológicos son aquellos donde un agente perturbador afectan a los seres vivos y el medio ambiente.",
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 12.dp)
+            )
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
         VideoPlayerExo(
             modifier = Modifier
@@ -4053,8 +4319,18 @@ fun PantallaRiesgosSanitarioEcologicos(
         }
 
         Spacer(modifier = Modifier.weight(1f))
+
+        // ✅ Cálculo del tamaño responsivo para botones
+        val buttonFontSize = when {
+            screenWidthDp < 360 -> 12.sp
+            screenWidthDp < 412 -> 13.sp
+            else -> 14.sp
+        }
+
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
@@ -4065,13 +4341,15 @@ fun PantallaRiesgosSanitarioEcologicos(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
-                    .widthIn(min = 120.dp)
+                    .weight(1f)
                     .height(48.dp)
+                    .padding(horizontal = 4.dp)
             ) {
                 Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
+                    "Regresar",
+                    fontSize = buttonFontSize,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center
                 )
             }
@@ -4083,13 +4361,15 @@ fun PantallaRiesgosSanitarioEcologicos(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
-                    .widthIn(min = 120.dp)
+                    .weight(1f)
                     .height(48.dp)
+                    .padding(horizontal = 4.dp)
             ) {
                 Text(
-                    text = "Actividad",
-                    fontSize = 15.sp,
-                    maxLines = 3,
+                    "Actividad",
+                    fontSize = buttonFontSize,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center
                 )
             }
@@ -4101,13 +4381,15 @@ fun PantallaRiesgosSanitarioEcologicos(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
-                    .widthIn(min = 120.dp)
+                    .weight(1f)
                     .height(48.dp)
+                    .padding(horizontal = 4.dp)
             ) {
                 Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
+                    "Menú",
+                    fontSize = buttonFontSize,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center
                 )
             }
@@ -4363,6 +4645,10 @@ fun PantallaRiesgosSocioOrganizativos(
     val scope = rememberCoroutineScope()
 
     val context = LocalContext.current as MainActivity
+
+    // ✅ Estado para el desplegable de la descripción
+    var expandedSocioOrg by remember { mutableStateOf(false) }
+
     val opciones = listOf(
         "Accidentes carreteros, ferroviarios y aéreos",
         "Concentración masiva de personas",
@@ -4387,22 +4673,79 @@ fun PantallaRiesgosSocioOrganizativos(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = "Fenómenos Socio – Organizativos",
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "Los fenómenos socio – organizativos se generan con motivo de errores humanos o por acciones premeditadas.",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
+
+        // ✅ Cálculo del tamaño responsivo
+        val resources = LocalContext.current.resources
+        val screenWidthDp = resources.displayMetrics.widthPixels / resources.displayMetrics.density
+
+        val titleFontSize = when {
+            screenWidthDp < 360 -> 18.sp
+            screenWidthDp < 412 -> 20.sp
+            screenWidthDp < 600 -> 22.sp
+            else -> 26.sp
+        }
+
+        val lineHeightSize = when {
+            screenWidthDp < 360 -> 22.sp
+            screenWidthDp < 412 -> 24.sp
+            screenWidthDp < 600 -> 26.sp
+            else -> 30.sp
+        }
+
+        // ✅ Título con ícono desplegable
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(modifier = Modifier.width(32.dp))
+            Text(
+                text = "Fenómenos Socio-Organizativos",
+                fontSize = titleFontSize,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = lineHeightSize
+            )
+            IconButton(
+                onClick = { expandedSocioOrg = !expandedSocioOrg },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = if (expandedSocioOrg) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Más información",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // ✅ Descripción desplegable
+        AnimatedVisibility(
+            visible = expandedSocioOrg,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Text(
+                text = "Los fenómenos socio – organizativos se generan con motivo de errores humanos o por acciones premeditadas.",
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 12.dp)
+            )
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
         VideoPlayerExo(
             modifier = Modifier
@@ -4451,8 +4794,18 @@ fun PantallaRiesgosSocioOrganizativos(
         }
 
         Spacer(modifier = Modifier.weight(1f))
+
+        // ✅ Cálculo del tamaño responsivo para botones
+        val buttonFontSize = when {
+            screenWidthDp < 360 -> 12.sp
+            screenWidthDp < 412 -> 13.sp
+            else -> 14.sp
+        }
+
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
@@ -4463,13 +4816,15 @@ fun PantallaRiesgosSocioOrganizativos(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
-                    .widthIn(min = 120.dp)
+                    .weight(1f)
                     .height(48.dp)
+                    .padding(horizontal = 4.dp)
             ) {
                 Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
+                    "Regresar",
+                    fontSize = buttonFontSize,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center
                 )
             }
@@ -4481,13 +4836,15 @@ fun PantallaRiesgosSocioOrganizativos(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
-                    .widthIn(min = 120.dp)
+                    .weight(1f)
                     .height(48.dp)
+                    .padding(horizontal = 4.dp)
             ) {
                 Text(
-                    text = "Actividad",
-                    fontSize = 15.sp,
-                    maxLines = 3,
+                    "Actividad",
+                    fontSize = buttonFontSize,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center
                 )
             }
@@ -4499,13 +4856,15 @@ fun PantallaRiesgosSocioOrganizativos(
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
-                    .widthIn(min = 120.dp)
+                    .weight(1f)
                     .height(48.dp)
+                    .padding(horizontal = 4.dp)
             ) {
                 Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
+                    "Menú",
+                    fontSize = buttonFontSize,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center
                 )
             }
@@ -4830,6 +5189,40 @@ fun PantallaSopaLetrasSocioOrganizativos(
     )
 }
 
+@Composable
+fun PantallaSopaLetrasQuimicoTec(
+    onBack: () -> Unit
+) {
+    // Matriz de la sopa de letras (10x10) ajustada: sin TRANSPORTE, URBANOS corregido, INCENDIOS añadido
+    val matriz = listOf(
+        listOf('F','R','E','S','I','D','U','O','S','N'), // RESIDUOS
+        listOf('O','O','F','U','G','A','S','É','É','I'), // FUGAS
+        listOf('U','R','B','A','N','O','S','T','E','O'), // URBANOS (U normal)
+        listOf('F','N','N','E','Ú','C','D','H','Ñ','C'),
+        listOf('E','X','P','L','O','S','I','O','N','S'), // EXPLOSION
+        listOf('I','N','C','E','N','D','I','O','S','Q'), // INCENDIOS
+        listOf('H','L','M','X','R','É','A','H','Ú','D'),
+        listOf('D','C','H','Q','J','A','J','L','K','I'),
+        listOf('D','E','R','R','A','M','E','S','E','O'), // DERRAMES
+        listOf('P','E','L','I','G','R','O','S','O','S')  // PELIGROSOS
+    )
+    val palabras = listOf(
+        "DERRAMES", "FORESTALES", "FUGAS", "INCENDIOS", "PELIGROSOS", "RESIDUOS", "URBANOS", "EXPLOSION"
+    )
+
+    SopaLetrasScreen(
+        matriz = matriz,
+        palabras = palabras,
+        onBack = onBack,
+        titulo = "Sopa de letras:",
+        subtitulo = "Fenómenos Químico-Tecnológicos",
+        textoAdicional = "Resuelve de manera correcta la siguiente sopa de letras encontrando las palabras de la lista.",
+        pregunta = "Un fenómeno Químico-Tecnológico lo identificas cuando ocurre un(a):",
+        opciones = listOf("Helada", "Incendio forestal", "Accidente carretero"),
+        opcionCorrecta = 1 // "Incendio forestal" es la opción correcta (índice 1)
+    )
+}
+
 // --- Pantalla de Sopa de Letras para Fenómenos Sanitario-Ecológicos ---
 @Composable
 fun PantallaSopaLetrasSanitarioEcologico(
@@ -4867,41 +5260,6 @@ fun PantallaSopaLetrasSanitarioEcologico(
 
 // --- Pantalla de Sopa de Letras para Químico-Tecnológicos ---
 @Composable
-fun PantallaSopaLetrasQuimicoTec(
-    onBack: () -> Unit
-) {
-    // Matriz de la sopa de letras (10x10) ajustada: sin TRANSPORTE, URBANOS corregido, INCENDIOS añadido
-    val matriz = listOf(
-        listOf('F','R','E','S','I','D','U','O','S','N'), // RESIDUOS
-        listOf('O','O','F','U','G','A','S','É','É','I'), // FUGAS
-        listOf('U','R','B','A','N','O','S','T','E','O'), // URBANOS (U normal)
-        listOf('F','N','N','E','Ú','C','D','H','Ñ','C'),
-        listOf('E','X','P','L','O','S','I','O','N','S'), // EXPLOSION
-        listOf('I','N','C','E','N','D','I','O','S','Q'), // INCENDIOS
-        listOf('H','L','M','X','R','É','A','H','Ú','D'),
-        listOf('D','C','H','Q','J','A','J','L','K','I'),
-        listOf('D','E','R','R','A','M','E','S','E','O'), // DERRAMES
-        listOf('P','E','L','I','G','R','O','S','O','S')  // PELIGROSOS
-    )
-    val palabras = listOf(
-        "DERRAMES", "FORESTALES", "FUGAS", "INCENDIOS", "PELIGROSOS", "RESIDUOS", "URBANOS", "EXPLOSION"
-    )
-
-    SopaLetrasScreen(
-        matriz = matriz,
-        palabras = palabras,
-        onBack = onBack,
-        titulo = "Sopa de letras:",
-        subtitulo = "Fenómenos Químico-Tecnológicos",
-        textoAdicional = "Resuelve de manera correcta la siguiente sopa de letras encontrando las palabras de la lista.",
-        pregunta = "Un fenómeno Químico-Tecnológico lo identificas cuando ocurre un(a):",
-        opciones = listOf("Helada", "Incendio forestal", "Accidente carretero"),
-        opcionCorrecta = 1 // "Incendio forestal" es la opción correcta (índice 1)
-    )
-}
-
-// Composable base para la sopa de letras (lógica e interfaz básica)
-@Composable
 fun SopaLetrasScreen(
     matriz: List<List<Char>>,
     palabras: List<String>,
@@ -4913,10 +5271,128 @@ fun SopaLetrasScreen(
     opciones: List<String> = emptyList(),
     opcionCorrecta: Int = -1
 ) {
-    // ✅ Instanciamos el ViewModel aquí, una sola vez
-    val sopaLetrasViewModel: SopaLetrasViewModel = viewModel()
     val ctx = LocalContext.current
+    val sopaLetrasViewModel: SopaLetrasViewModel = viewModel()
 
+    // --- Estados principales ---
+    val seleccion = remember { mutableStateListOf<Pair<Int, Int>>() }
+    val encontradas = remember { mutableStateListOf<String>() }
+    val posicionesEncontradas = remember { mutableStateListOf<List<Pair<Int, Int>>>() }
+    var inicio by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    var fin by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+
+    var respuestaSeleccionada by remember { mutableStateOf<String?>(null) }
+    var mostrarResultado by remember { mutableStateOf(false) }
+
+    var mostrarFelicidades by remember { mutableStateOf(false) }
+
+    // --- Función auxiliar para encontrar palabra en la matriz ---
+    fun buscarPalabraEnMatriz(palabra: String): List<Pair<Int, Int>>? {
+        val palabraUpper = palabra.uppercase()
+        // Buscar en todas las direcciones posibles
+        for (i in matriz.indices) {
+            for (j in matriz[0].indices) {
+                // 8 direcciones: horizontal, vertical, diagonales
+                val direcciones = listOf(
+                    0 to 1,   // derecha
+                    0 to -1,  // izquierda
+                    1 to 0,   // abajo
+                    -1 to 0,  // arriba
+                    1 to 1,   // diagonal abajo-derecha
+                    -1 to -1, // diagonal arriba-izquierda
+                    1 to -1,  // diagonal abajo-izquierda
+                    -1 to 1   // diagonal arriba-derecha
+                )
+
+                for ((di, dj) in direcciones) {
+                    val posiciones = mutableListOf<Pair<Int, Int>>()
+                    var coincide = true
+
+                    for (k in palabraUpper.indices) {
+                        val ni = i + k * di
+                        val nj = j + k * dj
+
+                        if (ni !in matriz.indices || nj !in matriz[0].indices) {
+                            coincide = false
+                            break
+                        }
+
+                        if (matriz[ni][nj].uppercaseChar() != palabraUpper[k]) {
+                            coincide = false
+                            break
+                        }
+
+                        posiciones.add(ni to nj)
+                    }
+
+                    if (coincide && posiciones.size == palabraUpper.length) {
+                        return posiciones
+                    }
+                }
+            }
+        }
+        return null
+    }
+
+    // --- Función auxiliar ---
+    fun palabraSeleccionadaYPosiciones(): Pair<String, List<Pair<Int, Int>>> {
+        if (inicio == null || fin == null) return "" to emptyList()
+        val (i0, j0) = inicio!!
+        val (i1, j1) = fin!!
+        val di = (i1 - i0).coerceIn(-1, 1)
+        val dj = (j1 - j0).coerceIn(-1, 1)
+        val len = maxOf(abs(i1 - i0), abs(j1 - j0)) + 1
+        val sb = StringBuilder()
+        val posiciones = mutableListOf<Pair<Int, Int>>()
+        for (k in 0 until len) {
+            val ni = i0 + k * di
+            val nj = j0 + k * dj
+            if (ni in matriz.indices && nj in matriz[0].indices) {
+                sb.append(matriz[ni][nj])
+                posiciones.add(ni to nj)
+            }
+        }
+        return sb.toString().uppercase() to posiciones
+    }
+
+    // --- Restaurar progreso guardado ---
+    LaunchedEffect(Unit) {
+        val section = when (subtitulo.lowercase()) {
+            "fenómenos geológicos" -> "geologicos"
+            "fenómenos hidrometeorológicos" -> "hidromet"
+            "fenómenos químico-tecnológicos" -> "quimicotec"
+            "fenómenos sanitario-ecológicos" -> "sanitarioeco"
+            "fenómenos socio-organizativos" -> "socioorg"
+            else -> ""
+        }
+        if (section.isNotEmpty()) {
+            val saved = LocalStore.getFoundWords(ctx, section)
+            saved.forEach { palabra ->
+                if (palabra in palabras && palabra !in encontradas) {
+                    encontradas.add(palabra)
+                    // Buscar las posiciones de esta palabra en la matriz
+                    val posiciones = buscarPalabraEnMatriz(palabra)
+                    if (posiciones != null) {
+                        posicionesEncontradas.add(posiciones)
+                    }
+                }
+            }
+            val ans = LocalStore.getAnswer(ctx, section)
+            if (ans != null && ans.isNotBlank()) {
+                respuestaSeleccionada = ans
+                mostrarResultado = true
+            }
+        }
+    }
+
+    // --- Detectar cuando se completan todas las palabras ---
+    LaunchedEffect(encontradas.size) {
+        if (encontradas.size == palabras.size && palabras.isNotEmpty()) {
+            mostrarFelicidades = true
+        }
+    }
+
+    // --- Interfaz principal ---
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -4935,7 +5411,9 @@ fun SopaLetrasScreen(
             text = subtitulo,
             fontSize = 20.sp,
             fontWeight = FontWeight.Medium,
-            modifier = Modifier.fillMaxWidth().padding(bottom = 3.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 3.dp),
             textAlign = TextAlign.Center
         )
         Text(
@@ -4945,75 +5423,23 @@ fun SopaLetrasScreen(
             textAlign = TextAlign.Center
         )
 
-        // Estados para selección y palabras encontradas
-        val seleccion = remember { mutableStateListOf<Pair<Int, Int>>() }
-        val encontradas = remember { mutableStateListOf<String>() }
-        val posicionesEncontradas = remember { mutableStateListOf<List<Pair<Int, Int>>>() }
-        var inicio by remember { mutableStateOf<Pair<Int, Int>?>(null) }
-        var fin by remember { mutableStateOf<Pair<Int, Int>?>(null) }
-
-        // Estados para la pregunta
-        var respuestaSeleccionada by remember { mutableStateOf<String?>(null) }
-        var mostrarResultado by remember { mutableStateOf(false) }
-
-        // Función para obtener la palabra seleccionada y sus posiciones
-        fun palabraSeleccionadaYPosiciones(): Pair<String, List<Pair<Int, Int>>> {
-            if (inicio == null || fin == null) return "" to emptyList()
-            val (i0, j0) = inicio!!
-            val (i1, j1) = fin!!
-            val di = (i1 - i0).coerceIn(-1, 1)
-            val dj = (j1 - j0).coerceIn(-1, 1)
-            val len = maxOf(abs(i1 - i0), abs(j1 - j0)) + 1
-            val sb = StringBuilder()
-            val posiciones = mutableListOf<Pair<Int, Int>>()
-            for (k in 0 until len) {
-                val ni = i0 + k * di
-                val nj = j0 + k * dj
-                if (ni in matriz.indices && nj in matriz[0].indices) {
-                    sb.append(matriz[ni][nj])
-                    posiciones.add(ni to nj)
-                }
-            }
-            return sb.toString().uppercase() to posiciones
-        }
-
-        // ✅ Restaurar progreso guardado
-        LaunchedEffect(Unit) {
-            val section = when (subtitulo.lowercase()) {
-                "fenómenos geológicos".lowercase() -> "geologicos"
-                "fenómenos hidrometeorológicos".lowercase() -> "hidromet"
-                "fenómenos químico-tecnológicos".lowercase() -> "quimicotec"
-                "fenómenos sanitario-ecológicos".lowercase() -> "sanitarioeco"
-                "fenómenos socio-organizativos".lowercase() -> "socioorg"
-                else -> ""
-            }
-            if (section.isNotEmpty()) {
-                val saved = LocalStore.getFoundWords(ctx, section)
-                saved.forEach { palabra ->
-                    if (palabra in palabras && palabra !in encontradas) encontradas.add(palabra)
-                }
-                val ans = LocalStore.getAnswer(ctx, section)
-                if (ans != null && ans.isNotBlank()) {
-                    respuestaSeleccionada = ans
-                    mostrarResultado = true
-                }
-            }
-        }
-
-        // Matriz de letras con interacción drag
+        // --- Matriz interactiva ---
         for ((i, fila) in matriz.withIndex()) {
             Row {
                 for ((j, letra) in fila.withIndex()) {
                     val pos = i to j
                     val seleccionado = seleccion.contains(pos)
+
+                    // El subrayado ahora depende directamente de posicionesEncontradas
                     val subrayado = posicionesEncontradas.any { lista -> pos in lista }
+
                     Box(
                         modifier = Modifier
                             .size(28.dp)
                             .background(
                                 when {
                                     seleccionado -> Color(0xFF90CAF9)
-                                    subrayado -> MaterialTheme.colorScheme.primary
+                                    subrayado -> Color(0xFF009ab9)
                                     else -> MaterialTheme.colorScheme.surfaceVariant
                                 },
                                 RoundedCornerShape(4.dp)
@@ -5050,9 +5476,7 @@ fun SopaLetrasScreen(
                                                 dj = 0
                                                 len = absDy + 1
                                             } else {
-                                                di = 0
-                                                dj = 0
-                                                len = 1
+                                                di = 0; dj = 0; len = 1
                                             }
                                             seleccion.clear()
                                             for (k in 0 until len) {
@@ -5071,13 +5495,12 @@ fun SopaLetrasScreen(
                                             encontradas.add(palabra)
                                             posicionesEncontradas.add(posiciones)
 
-                                            // ✅ Guardamos en ViewModel
                                             val section = when (subtitulo.lowercase()) {
-                                                "fenómenos geológicos".lowercase() -> "geologicos"
-                                                "fenómenos hidrometeorológicos".lowercase() -> "hidromet"
-                                                "fenómenos químico-tecnológicos".lowercase() -> "quimicotec"
-                                                "fenómenos sanitario-ecológicos".lowercase() -> "sanitarioeco"
-                                                "fenómenos socio-organizativos".lowercase() -> "socioorg"
+                                                "fenómenos geológicos" -> "geologicos"
+                                                "fenómenos hidrometeorológicos" -> "hidromet"
+                                                "fenómenos químico-tecnológicos" -> "quimicotec"
+                                                "fenómenos sanitario-ecológicos" -> "sanitarioeco"
+                                                "fenómenos socio-organizativos" -> "socioorg"
                                                 else -> ""
                                             }
                                             if (section.isNotEmpty()) {
@@ -5122,7 +5545,7 @@ fun SopaLetrasScreen(
             }
         }
 
-        // Contador de palabras encontradas
+        // --- Contador ---
         Text(
             text = "Palabras encontradas: ${encontradas.size} de ${palabras.size}",
             fontSize = 16.sp,
@@ -5131,7 +5554,7 @@ fun SopaLetrasScreen(
             modifier = Modifier.padding(top = 12.dp, bottom = 16.dp)
         )
 
-        // Sección de pregunta
+        // --- Sección de pregunta ---
         if (pregunta.isNotBlank() && opciones.isNotEmpty() && opcionCorrecta >= 0) {
             Box(
                 modifier = Modifier
@@ -5146,14 +5569,12 @@ fun SopaLetrasScreen(
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-
                     Text(
                         text = pregunta,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
-
                     opciones.forEach { opcion ->
                         Row(
                             modifier = Modifier
@@ -5162,13 +5583,12 @@ fun SopaLetrasScreen(
                                     respuestaSeleccionada = opcion
                                     mostrarResultado = true
 
-                                    // ✅ Guardamos respuesta en ViewModel
                                     val section = when (subtitulo.lowercase()) {
-                                        "fenómenos geológicos".lowercase() -> "geologicos"
-                                        "fenómenos hidrometeorológicos".lowercase() -> "hidromet"
-                                        "fenómenos químico-tecnológicos".lowercase() -> "quimicotec"
-                                        "fenómenos sanitario-ecológicos".lowercase() -> "sanitarioeco"
-                                        "fenómenos socio-organizativos".lowercase() -> "socioorg"
+                                        "fenómenos geológicos" -> "geologicos"
+                                        "fenómenos hidrometeorológicos" -> "hidromet"
+                                        "fenómenos químico-tecnológicos" -> "quimicotec"
+                                        "fenómenos sanitario-ecológicos" -> "sanitarioeco"
+                                        "fenómenos socio-organizativos" -> "socioorg"
                                         else -> ""
                                     }
                                     if (section.isNotEmpty()) {
@@ -5182,14 +5602,14 @@ fun SopaLetrasScreen(
                                 modifier = Modifier
                                     .size(20.dp)
                                     .background(
-                                        if (respuestaSeleccionada == opcion) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                        if (respuestaSeleccionada == opcion) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.surfaceVariant,
                                         RoundedCornerShape(10.dp)
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                if (respuestaSeleccionada == opcion) {
+                                if (respuestaSeleccionada == opcion)
                                     Text("●", color = MaterialTheme.colorScheme.surface, fontSize = 12.sp)
-                                }
                             }
                             Spacer(modifier = Modifier.padding(horizontal = 8.dp))
                             Text(text = opcion, fontSize = 16.sp)
@@ -5209,7 +5629,7 @@ fun SopaLetrasScreen(
                                 .padding(12.dp)
                         ) {
                             Text(
-                                text = if (esCorrecta) "¡Correcto!" else "Incorrecto. La respuesta correcta es: ${opciones[opcionCorrecta]}",
+                                text = if (esCorrecta) "¡Correcto!" else "Incorrecto. Intentalo de nuevo.",
                                 fontSize = 14.sp,
                                 color = if (esCorrecta) Color(0xFF2E7D32) else Color(0xFFD32F2F),
                                 fontWeight = FontWeight.Medium
@@ -5222,5 +5642,76 @@ fun SopaLetrasScreen(
         }
 
         Button(onClick = onBack) { Text("Regresar") }
+    }
+
+    // --- Modal de Felicidades (GIF intacto) ---
+    if (mostrarFelicidades) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+                .clickable { mostrarFelicidades = false },
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp)),
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 8.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¡FELICIDADES!",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Completaste la sopa de letras.",
+                        fontSize = 18.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    val imageLoader = ImageLoader.Builder(LocalContext.current)
+                        .components { add(GifDecoder.Factory()) }
+                        .build()
+
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data("android.resource://${LocalContext.current.packageName}/${R.raw.felicidades}")
+                            .crossfade(true)
+                            .build(),
+                        imageLoader = imageLoader,
+                        contentDescription = "Felicidades GIF",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(150.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Fit
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { mostrarFelicidades = false },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("Continuar", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
     }
 }
