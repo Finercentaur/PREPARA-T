@@ -5,6 +5,8 @@ import kotlinx.coroutines.flow.first
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import org.json.JSONObject
 import java.io.File
 import java.text.SimpleDateFormat
@@ -12,7 +14,7 @@ import java.util.Date
 import java.util.Locale
 
 // ✅ Inicialización del DataStore a nivel de extensión de Context
-private val Context.dataStore by preferencesDataStore(name = "preparat_prefs")
+val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "preparat_prefs")
 
 object LocalStore {
     // 🔑 Claves de DataStore
@@ -20,6 +22,7 @@ object LocalStore {
     private fun selectionKey(section: String) = stringPreferencesKey("selections_$section")
     private fun wordsKey(section: String) = stringPreferencesKey("sopa_words_$section")
     private fun answerKey(section: String) = stringPreferencesKey("sopa_answer_$section")
+    private fun identificacionKey(fenomeno: String) = stringPreferencesKey("identificacion_$fenomeno")
 
     // ✅ Constantes para las secciones válidas
     object Sections {
@@ -30,6 +33,18 @@ object LocalStore {
         const val SOCIOORG = "socioorg"
 
         val ALL = listOf(GEOLOGICOS, HIDROMET, QUIMICOTEC, SANITARIOECO, SOCIOORG)
+    }
+
+    // ✅ Constantes para los fenómenos
+    object Fenomenos {
+        const val ERUPCION = "erupcion"
+        const val SISMO = "sismo"
+        const val TSUNAMI = "tsunami"
+        const val GRIETAS = "grietas"
+        const val DESLIZAMIENTO = "deslizamiento"
+        const val HUNDIMIENTOS = "hundimientos"
+
+        val ALL = listOf(ERUPCION, SISMO, TSUNAMI, GRIETAS, DESLIZAMIENTO, HUNDIMIENTOS)
     }
 
     // ----------------------
@@ -92,7 +107,7 @@ object LocalStore {
         }
     }
 
-    // ✅ Nueva función para borrar todas las selecciones de una sección
+    // ✅ Función para borrar todas las selecciones de una sección
     suspend fun clearSelections(context: Context, section: String) {
         try {
             val key = selectionKey(section)
@@ -158,6 +173,44 @@ object LocalStore {
     }
 
     // ----------------------
+    // 📌 Identificación de fenómenos (NUEVO)
+    // ----------------------
+    suspend fun saveIdentificacion(context: Context, fenomeno: String, respuesta: String) {
+        if (fenomeno.isBlank()) return
+
+        try {
+            val key = identificacionKey(fenomeno)
+            context.dataStore.edit { preferences ->
+                preferences[key] = respuesta.trim()
+            }
+        } catch (e: Exception) {
+            throw LocalStoreException("Error saving identificacion for fenomeno $fenomeno: ${e.message}")
+        }
+    }
+
+    suspend fun getIdentificacion(context: Context, fenomeno: String): String {
+        if (fenomeno.isBlank()) return ""
+
+        return try {
+            val key = identificacionKey(fenomeno)
+            val preferences = context.dataStore.data.first()
+            preferences[key] ?: ""
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    // ✅ Limpiar identificación de un fenómeno
+    suspend fun clearIdentificacion(context: Context, fenomeno: String) {
+        try {
+            val key = identificacionKey(fenomeno)
+            context.dataStore.edit { it.remove(key) }
+        } catch (e: Exception) {
+            throw LocalStoreException("Error clearing identificacion for fenomeno $fenomeno: ${e.message}")
+        }
+    }
+
+    // ----------------------
     // 📌 Funciones de utilidad
     // ----------------------
     suspend fun hasAnySelections(context: Context, section: String): Boolean {
@@ -177,6 +230,17 @@ object LocalStore {
         return hasSelections && (hasAnswer || hasFoundWords)
     }
 
+    // ✅ Contar identificaciones completadas
+    suspend fun getIdentificacionesCount(context: Context): Int {
+        return try {
+            Fenomenos.ALL.count { fenomeno ->
+                getIdentificacion(context, fenomeno).isNotEmpty()
+            }
+        } catch (e: Exception) {
+            0
+        }
+    }
+
     // ----------------------
     // 📌 Exportar todo a JSON (mejorado)
     // ----------------------
@@ -192,6 +256,7 @@ object LocalStore {
             // Selections
             val selections = JSONObject()
             val sopa = JSONObject()
+            val identificaciones = JSONObject()
             var totalSelections = 0
 
             for (section in Sections.ALL) {
@@ -207,9 +272,16 @@ object LocalStore {
                 sopa.put(section, prog)
             }
 
+            // Identificaciones de fenómenos
+            for (fenomeno in Fenomenos.ALL) {
+                identificaciones.put(fenomeno, getIdentificacion(context, fenomeno))
+            }
+
             root.put("selections", selections)
             root.put("sopa_progress", sopa)
+            root.put("identificaciones", identificaciones)
             root.put("total_selections", totalSelections)
+            root.put("total_identificaciones", getIdentificacionesCount(context))
 
             // Guardar en archivo con mejor nomenclatura
             val dir = context.getExternalFilesDir(null) ?: context.filesDir
@@ -224,7 +296,7 @@ object LocalStore {
         }
     }
 
-    // ✅ Nueva función para importar datos (opcional)
+    // ✅ Función para importar datos (mejorada)
     suspend fun importFromFile(context: Context, file: File) {
         try {
             val jsonString = file.readText()
@@ -253,8 +325,32 @@ object LocalStore {
                 }
             }
 
+            // Importar identificaciones
+            if (root.has("identificaciones")) {
+                val identificaciones = root.getJSONObject("identificaciones")
+                for (fenomeno in Fenomenos.ALL) {
+                    if (identificaciones.has(fenomeno)) {
+                        val respuesta = identificaciones.getString(fenomeno)
+                        if (respuesta.isNotEmpty()) {
+                            saveIdentificacion(context, fenomeno, respuesta)
+                        }
+                    }
+                }
+            }
+
         } catch (e: Exception) {
             throw LocalStoreException("Error importing data: ${e.message}")
+        }
+    }
+
+    // ✅ Función para limpiar todos los datos (útil para testing o reset)
+    suspend fun clearAllData(context: Context) {
+        try {
+            context.dataStore.edit { preferences ->
+                preferences.clear()
+            }
+        } catch (e: Exception) {
+            throw LocalStoreException("Error clearing all data: ${e.message}")
         }
     }
 }

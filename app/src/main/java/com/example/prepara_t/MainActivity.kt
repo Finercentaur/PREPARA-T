@@ -94,6 +94,9 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.ImageLoader
 import coil.decode.GifDecoder
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.CheckboxDefaults
 
 // Enum para manejar las diferentes pantallas de la aplicación
 enum class AppScreen {
@@ -1169,15 +1172,10 @@ fun PantallaGeologicos(
     onNavigateToDeslizamiento: (() -> Unit)? = null,
     onNavigateToHundimientos: (() -> Unit)? = null
 ) {
-    val ctx = LocalContext.current
-    val scope = rememberCoroutineScope()
-
-    val context = LocalContext.current as MainActivity
-
     // ✅ Estado para el desplegable de la descripción
     var expandedGeologicos by remember { mutableStateOf(false) }
 
-    // Estado para los checkboxes
+    // Opciones de fenómenos
     val opciones = listOf(
         "Erupción volcánica",
         "Sismo",
@@ -1186,16 +1184,6 @@ fun PantallaGeologicos(
         "Deslizamiento de laderas",
         "Hundimientos y socavones"
     )
-
-    // ✅ Estado inicial dinámico
-    val checkedList = remember { mutableStateListOf<Boolean>() }
-
-    // ✅ Cargar datos guardados al iniciar la pantalla (método consistente)
-    LaunchedEffect(Unit) {
-        val saved = LocalStore.getSelections(ctx, "geologicos")
-        checkedList.clear()
-        checkedList.addAll(opciones.map { it in saved })
-    }
 
     Column(
         modifier = Modifier
@@ -1254,6 +1242,16 @@ fun PantallaGeologicos(
         Spacer(modifier = Modifier.height(16.dp))
         VideoFenomenoGeologico()
         Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Te invitamos a ver las siguientes cápsulas dando click al ícono:",
+            fontSize = 15.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+
         Spacer(modifier = Modifier.height(12.dp))
 
         Column(
@@ -1261,17 +1259,8 @@ fun PantallaGeologicos(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             opciones.forEachIndexed { idx, texto ->
-                OpcionGeologica(
+                OpcionGeologicaSimple(
                     texto = texto,
-                    checked = checkedList.getOrNull(idx) ?: false,
-                    onCheckedChange = { checked ->
-                        // ✅ Actualizar estado local
-                        if (idx < checkedList.size) checkedList[idx] = checked
-                        // ✅ Guardar en DataStore (solo aquí, no duplicado)
-                        scope.launch {
-                            LocalStore.updateSelection(ctx, "geologicos", texto, checked)
-                        }
-                    },
                     onClick = when (texto) {
                         "Erupción volcánica" -> onNavigateToErupcion
                         "Sismo" -> onNavigateToSismo
@@ -1283,23 +1272,7 @@ fun PantallaGeologicos(
                     }
                 )
                 Spacer(modifier = Modifier.height(10.dp))
-
             }
-            // Botón de envío
-            Button(onClick = {
-                // Construir la lista de seleccionadas
-                val seleccionadas = opciones.filterIndexed { index, _ -> checkedList[index] }
-                val seleccionadasString = seleccionadas.joinToString(", ")
-
-                context.agregarDatos(
-                    categoria = "GEOLOGICOS",
-                    seleccion = seleccionadasString
-                )
-            }) {
-                Text("Guardar Selección")
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -1379,10 +1352,8 @@ fun PantallaGeologicos(
 }
 
 @Composable
-fun OpcionGeologica(
+fun OpcionGeologicaSimple(
     texto: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
     onClick: (() -> Unit)? = null
 ) {
     Surface(
@@ -1459,13 +1430,6 @@ fun OpcionGeologica(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
-            )
-
-            // ✅ CORRECCIÓN: Eliminamos la lógica duplicada del Checkbox
-            // Solo queda el onCheckedChange que viene del padre
-            Checkbox(
-                checked = checked,
-                onCheckedChange = onCheckedChange
             )
         }
     }
@@ -1657,13 +1621,31 @@ fun PantallaSismo(
     onMenu: () -> Unit,
     onNext: () -> Unit
 ) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    // Estados para los checkboxes
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    // Cargar estado guardado
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "sismo")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp, vertical = 12.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(32.dp))
@@ -1687,13 +1669,229 @@ fun PantallaSismo(
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(24.dp))
+
             VideoPlayerExo(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp),
                 videoResId = R.raw.fgsismo
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Pregunta con checkboxes
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas sismos en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        // Opción Sí
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(
+                                            ctx,
+                                            "sismo",
+                                            if (identificaSi) "si" else ""
+                                        )
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(
+                                1.dp,
+                                if (identificaSi) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.outline
+                            ),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(
+                                    checked = identificaSi,
+                                    onCheckedChange = null,
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = MaterialTheme.colorScheme.primary,
+                                        uncheckedColor = MaterialTheme.colorScheme.outline
+                                    )
+                                )
+                            }
+                        }
+
+                        // Opción No
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(
+                                            ctx,
+                                            "sismo",
+                                            if (identificaNo) "no" else ""
+                                        )
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(
+                                1.dp,
+                                if (identificaNo) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.outline
+                            ),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(
+                                    checked = identificaNo,
+                                    onCheckedChange = null,
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = MaterialTheme.colorScheme.primary,
+                                        uncheckedColor = MaterialTheme.colorScheme.outline
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Sección de enlaces
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Botones de enlaces
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Protección civil",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/smn") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "SMN",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.ssn.unam.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "SSN",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "CENAPRED",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
         }
+
+        // Botones de navegación
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -1715,7 +1913,7 @@ fun PantallaSismo(
                 Text(
                     text = "Regresar",
                     fontSize = 15.sp,
-                    maxLines = 3,
+                    maxLines = 1,
                     textAlign = TextAlign.Center
                 )
             }
@@ -1733,7 +1931,7 @@ fun PantallaSismo(
                 Text(
                     text = "Menú",
                     fontSize = 15.sp,
-                    maxLines = 3,
+                    maxLines = 1,
                     textAlign = TextAlign.Center
                 )
             }
@@ -1751,7 +1949,7 @@ fun PantallaSismo(
                 Text(
                     text = "Siguiente",
                     fontSize = 15.sp,
-                    maxLines = 3,
+                    maxLines = 1,
                     textAlign = TextAlign.Center
                 )
             }
