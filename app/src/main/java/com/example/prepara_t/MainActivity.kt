@@ -1506,20 +1506,38 @@ fun BotonMenu(
     }
 }
 
-
+// ============================================
+// ERUPCIÓN VOLCÁNICA
+// ============================================
 @Composable
 fun PantallaErupcionVolcanica(
     onBack: () -> Unit,
     onMenu: () -> Unit,
     onNext: () -> Unit
 ) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "erupcion")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp, vertical = 12.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(32.dp))
@@ -1549,12 +1567,138 @@ fun PantallaErupcionVolcanica(
                     .height(200.dp),
                 videoResId = R.raw.fgerupcion
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas erupciones volcánicas en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "erupcion", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "erupcion", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/smn") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("SMN", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
         }
+
         Row(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
@@ -1564,16 +1708,9 @@ fun PantallaErupcionVolcanica(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
             Button(
                 onClick = onMenu,
@@ -1582,16 +1719,9 @@ fun PantallaErupcionVolcanica(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
             Button(
                 onClick = onNext,
@@ -1600,21 +1730,17 @@ fun PantallaErupcionVolcanica(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Siguiente",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
         }
     }
 }
 
+// ============================================
+// SISMO
+// ============================================
 @Composable
 fun PantallaSismo(
     onBack: () -> Unit,
@@ -1625,11 +1751,9 @@ fun PantallaSismo(
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
 
-    // Estados para los checkboxes
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
 
-    // Cargar estado guardado
     LaunchedEffect(Unit) {
         val saved = LocalStore.getIdentificacion(ctx, "sismo")
         identificaSi = saved == "si"
@@ -1669,7 +1793,6 @@ fun PantallaSismo(
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(24.dp))
-
             VideoPlayerExo(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1679,7 +1802,6 @@ fun PantallaSismo(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Pregunta con checkboxes
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -1700,7 +1822,6 @@ fun PantallaSismo(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        // Opción Sí
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
@@ -1709,19 +1830,11 @@ fun PantallaSismo(
                                     identificaSi = !identificaSi
                                     if (identificaSi) identificaNo = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(
-                                            ctx,
-                                            "sismo",
-                                            if (identificaSi) "si" else ""
-                                        )
+                                        LocalStore.saveIdentificacion(ctx, "sismo", if (identificaSi) "si" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
-                            border = BorderStroke(
-                                1.dp,
-                                if (identificaSi) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.outline
-                            ),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
                             color = MaterialTheme.colorScheme.surface
                         ) {
                             Row(
@@ -1731,18 +1844,10 @@ fun PantallaSismo(
                             ) {
                                 Text("Sí", fontSize = 16.sp)
                                 Spacer(modifier = Modifier.width(12.dp))
-                                Checkbox(
-                                    checked = identificaSi,
-                                    onCheckedChange = null,
-                                    colors = CheckboxDefaults.colors(
-                                        checkedColor = MaterialTheme.colorScheme.primary,
-                                        uncheckedColor = MaterialTheme.colorScheme.outline
-                                    )
-                                )
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
                             }
                         }
 
-                        // Opción No
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
@@ -1751,19 +1856,11 @@ fun PantallaSismo(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(
-                                            ctx,
-                                            "sismo",
-                                            if (identificaNo) "no" else ""
-                                        )
+                                        LocalStore.saveIdentificacion(ctx, "sismo", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
-                            border = BorderStroke(
-                                1.dp,
-                                if (identificaNo) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.outline
-                            ),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
                             color = MaterialTheme.colorScheme.surface
                         ) {
                             Row(
@@ -1773,14 +1870,7 @@ fun PantallaSismo(
                             ) {
                                 Text("No", fontSize = 16.sp)
                                 Spacer(modifier = Modifier.width(12.dp))
-                                Checkbox(
-                                    checked = identificaNo,
-                                    onCheckedChange = null,
-                                    colors = CheckboxDefaults.colors(
-                                        checkedColor = MaterialTheme.colorScheme.primary,
-                                        uncheckedColor = MaterialTheme.colorScheme.outline
-                                    )
-                                )
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
                             }
                         }
                     }
@@ -1789,7 +1879,6 @@ fun PantallaSismo(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Sección de enlaces
             Text(
                 text = "Para conocer más sobre el tema, visita las páginas siguientes:",
                 fontSize = 15.sp,
@@ -1799,104 +1888,63 @@ fun PantallaSismo(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Botones de enlaces
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
+                modifier = Modifier.fillMaxWidth().height(48.dp)
                     .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
                 shape = RoundedCornerShape(16.dp),
                 shadowElevation = 4.dp,
                 color = MaterialTheme.colorScheme.surface
             ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Protección civil",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
+                modifier = Modifier.fillMaxWidth().height(48.dp)
                     .clickable { uriHandler.openUri("https://www.gob.mx/smn") },
                 shape = RoundedCornerShape(16.dp),
                 shadowElevation = 4.dp,
                 color = MaterialTheme.colorScheme.surface
             ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "SMN",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("SMN", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
+                modifier = Modifier.fillMaxWidth().height(48.dp)
                     .clickable { uriHandler.openUri("http://www.ssn.unam.mx/") },
                 shape = RoundedCornerShape(16.dp),
                 shadowElevation = 4.dp,
                 color = MaterialTheme.colorScheme.surface
             ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "SSN",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("SSN", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
+                modifier = Modifier.fillMaxWidth().height(48.dp)
                     .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
                 shape = RoundedCornerShape(16.dp),
                 shadowElevation = 4.dp,
                 color = MaterialTheme.colorScheme.surface
             ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "CENAPRED",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
 
-        // Botones de navegación
         Row(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
@@ -1906,16 +1954,9 @@ fun PantallaSismo(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 1,
-                    textAlign = TextAlign.Center
-                )
+                Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
             Button(
                 onClick = onMenu,
@@ -1924,16 +1965,9 @@ fun PantallaSismo(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 1,
-                    textAlign = TextAlign.Center
-                )
+                Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
             Button(
                 onClick = onNext,
@@ -1942,34 +1976,46 @@ fun PantallaSismo(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Siguiente",
-                    fontSize = 15.sp,
-                    maxLines = 1,
-                    textAlign = TextAlign.Center
-                )
+                Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
         }
     }
 }
 
+// ============================================
+// TSUNAMI
+// ============================================
 @Composable
 fun PantallaTsunami(
     onBack: () -> Unit,
     onMenu: () -> Unit,
     onNext: () -> Unit
 ) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "tsunami")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp, vertical = 12.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(32.dp))
@@ -1999,12 +2045,138 @@ fun PantallaTsunami(
                     .height(200.dp),
                 videoResId = R.raw.fgtsunami
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas tsunamis en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "tsunami", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "tsunami", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/smn") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("SMN", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
         }
+
         Row(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
@@ -2014,16 +2186,9 @@ fun PantallaTsunami(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
             Button(
                 onClick = onMenu,
@@ -2032,16 +2197,9 @@ fun PantallaTsunami(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
             Button(
                 onClick = onNext,
@@ -2050,34 +2208,46 @@ fun PantallaTsunami(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Siguiente",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
         }
     }
 }
 
+// ============================================
+// GRIETAS
+// ============================================
 @Composable
 fun PantallaGrietas(
     onBack: () -> Unit,
     onMenu: () -> Unit,
     onNext: () -> Unit
 ) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "grietas")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp, vertical = 12.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(32.dp))
@@ -2107,12 +2277,138 @@ fun PantallaGrietas(
                     .height(200.dp),
                 videoResId = R.raw.fggrietas
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas grietas en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "grietas", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "grietas", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/smn") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("SMN", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
         }
+
         Row(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
@@ -2122,16 +2418,9 @@ fun PantallaGrietas(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
             Button(
                 onClick = onMenu,
@@ -2140,16 +2429,9 @@ fun PantallaGrietas(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
             Button(
                 onClick = onNext,
@@ -2158,34 +2440,46 @@ fun PantallaGrietas(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Siguiente",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
         }
     }
 }
 
+// ============================================
+// DESLIZAMIENTO DE LADERAS
+// ============================================
 @Composable
 fun PantallaDeslizamientoLaderas(
     onBack: () -> Unit,
     onMenu: () -> Unit,
     onNext: () -> Unit
 ) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "deslizamiento")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp, vertical = 12.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(32.dp))
@@ -2215,12 +2509,138 @@ fun PantallaDeslizamientoLaderas(
                     .height(200.dp),
                 videoResId = R.raw.fgdeslizamiento
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas deslizamientos de laderas en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "deslizamiento", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "deslizamiento", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/smn") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("SMN", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
         }
+
         Row(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
@@ -2230,16 +2650,9 @@ fun PantallaDeslizamientoLaderas(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
             Button(
                 onClick = onMenu,
@@ -2248,16 +2661,9 @@ fun PantallaDeslizamientoLaderas(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
             Button(
                 onClick = onNext,
@@ -2266,34 +2672,46 @@ fun PantallaDeslizamientoLaderas(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Siguiente",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
         }
     }
 }
 
+// ============================================
+// HUNDIMIENTOS Y SOCAVONES
+// ============================================
 @Composable
 fun PantallaHundimientosSocavones(
     onBack: () -> Unit,
     onMenu: () -> Unit,
     onNext: () -> Unit
 ) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "hundimientos")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp, vertical = 12.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(32.dp))
@@ -2323,12 +2741,138 @@ fun PantallaHundimientosSocavones(
                     .height(200.dp),
                 videoResId = R.raw.fgundimientos
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas hundimientos y socavones en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "hundimientos", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "hundimientos", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/smn") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("SMN", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
         }
+
         Row(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
@@ -2338,16 +2882,9 @@ fun PantallaHundimientosSocavones(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
             Button(
                 onClick = onMenu,
@@ -2356,16 +2893,9 @@ fun PantallaHundimientosSocavones(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
             Button(
                 onClick = onNext,
@@ -2374,16 +2904,9 @@ fun PantallaHundimientosSocavones(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Siguiente",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
         }
     }
@@ -2396,12 +2919,6 @@ fun PantallaRiesgosHidrometeorologicos(
     onMenu: () -> Unit,
     onNavigate: (AppScreen) -> Unit
 ) {
-    val ctx = LocalContext.current
-    val scope = rememberCoroutineScope()
-
-    val context = LocalContext.current as MainActivity
-
-    // ✅ Estado para el desplegable de la descripción
     var expandedHidrometeorologicos by remember { mutableStateOf(false) }
 
     val opciones = listOf(
@@ -2415,16 +2932,6 @@ fun PantallaRiesgosHidrometeorologicos(
         "Sequías"
     )
 
-    // ✅ Mantener tu estructura original con mutableStateListOf
-    val checkedList = remember { mutableStateListOf<Boolean>() }
-
-    // ✅ Cargar datos iniciales (igual que antes)
-    LaunchedEffect(Unit) {
-        val saved = LocalStore.getSelections(ctx, "hidromet")
-        checkedList.clear()
-        checkedList.addAll(opciones.map { it in saved })
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -2434,28 +2941,22 @@ fun PantallaRiesgosHidrometeorologicos(
     ) {
         Spacer(modifier = Modifier.height(32.dp))
 
-        // ✅ Título con ícono desplegable
+        // Título con ícono desplegable
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Spacer(modifier = Modifier.width(32.dp))
             Text(
                 text = "Fenómenos Hidrometeorológicos",
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 8.dp),
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
                 lineHeight = 30.sp
             )
+            Spacer(modifier = Modifier.width(8.dp))
             IconButton(
                 onClick = { expandedHidrometeorologicos = !expandedHidrometeorologicos },
                 modifier = Modifier.size(32.dp)
@@ -2463,15 +2964,14 @@ fun PantallaRiesgosHidrometeorologicos(
                 Icon(
                     imageVector = if (expandedHidrometeorologicos) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                     contentDescription = "Más información",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(28.dp)
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // ✅ Descripción desplegable
+        // Descripción desplegable
         AnimatedVisibility(
             visible = expandedHidrometeorologicos,
             enter = expandVertically() + fadeIn(),
@@ -2489,7 +2989,6 @@ fun PantallaRiesgosHidrometeorologicos(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        // Video de fenómenos hidrometeorológicos
         VideoPlayerExo(
             modifier = Modifier
                 .fillMaxWidth()
@@ -2497,6 +2996,16 @@ fun PantallaRiesgosHidrometeorologicos(
             videoResId = R.raw.fenomenohidro
         )
         Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Te invitamos a ver las siguientes cápsulas dando click al ícono:",
+            fontSize = 15.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+
         Spacer(modifier = Modifier.height(12.dp))
 
         Column(
@@ -2504,17 +3013,8 @@ fun PantallaRiesgosHidrometeorologicos(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             opciones.forEachIndexed { idx, texto ->
-                OpcionHidrometeorologica(
+                OpcionHidrometeorologicaSimple(
                     texto = texto,
-                    checked = checkedList.getOrNull(idx) ?: false,
-                    onCheckedChange = { checked ->
-                        // ✅ Solo actualizar el estado local
-                        if (idx < checkedList.size) checkedList[idx] = checked
-                        // ✅ Guardar en DataStore (solo aquí, no duplicado)
-                        scope.launch {
-                            LocalStore.updateSelection(ctx, "hidromet", texto, checked)
-                        }
-                    },
                     onClick = {
                         onNavigate(
                             when (idx) {
@@ -2533,28 +3033,12 @@ fun PantallaRiesgosHidrometeorologicos(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
-            // Botón de envío
-            Button(onClick = {
-                // Construir la lista de seleccionadas
-                val seleccionadas = opciones.filterIndexed { index, _ -> checkedList[index] }
-                val seleccionadasString = seleccionadas.joinToString(", ")
-
-                context.agregarDatos(
-                    categoria = "HIDROMETEOROLOGICOS",
-                    seleccion = seleccionadasString
-                )
-            }) {
-                Text("Guardar Selección")
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
 
         Spacer(modifier = Modifier.weight(1f))
+
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
@@ -2566,15 +3050,17 @@ fun PantallaRiesgosHidrometeorologicos(
                 ),
                 modifier = Modifier
                     .weight(1f)
-                    .height(48.dp)
                     .padding(horizontal = 4.dp)
+                    .height(48.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Text(
-                    "Regresar",
+                    text = "Regresar",
                     fontSize = 14.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    minLines = 1,
+                    lineHeight = 16.sp
                 )
             }
             Button(
@@ -2586,15 +3072,17 @@ fun PantallaRiesgosHidrometeorologicos(
                 ),
                 modifier = Modifier
                     .weight(1f)
-                    .height(48.dp)
                     .padding(horizontal = 4.dp)
+                    .height(48.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Text(
-                    "Actividad",
+                    text = "Actividad",
                     fontSize = 14.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    minLines = 1,
+                    lineHeight = 16.sp
                 )
             }
             Button(
@@ -2606,17 +3094,100 @@ fun PantallaRiesgosHidrometeorologicos(
                 ),
                 modifier = Modifier
                     .weight(1f)
-                    .height(48.dp)
                     .padding(horizontal = 4.dp)
+                    .height(48.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Text(
-                    "Menú",
+                    text = "Menú",
                     fontSize = 14.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    minLines = 1,
+                    lineHeight = 16.sp
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun OpcionHidrometeorologicaSimple(
+    texto: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        shadowElevation = 4.dp,
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier.size(40.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                when (texto) {
+                    "Ciclones tropicales" -> Image(
+                        painter = painterResource(id = R.drawable.ciclones),
+                        contentDescription = texto,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    "Inundaciones" -> Image(
+                        painter = painterResource(id = R.drawable.inundaciones),
+                        contentDescription = texto,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    "Heladas" -> Image(
+                        painter = painterResource(id = R.drawable.helada),
+                        contentDescription = texto,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    "Niebla" -> Image(
+                        painter = painterResource(id = R.drawable.niebla),
+                        contentDescription = texto,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    "Tormentas eléctricas" -> Image(
+                        painter = painterResource(id = R.drawable.tormenta),
+                        contentDescription = texto,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    "Granizo" -> Image(
+                        painter = painterResource(id = R.drawable.granizo),
+                        contentDescription = texto,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    "Frente frío" -> Image(
+                        painter = painterResource(id = R.drawable.frente),
+                        contentDescription = texto,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    "Sequías" -> Image(
+                        painter = painterResource(id = R.drawable.sequias),
+                        contentDescription = texto,
+                        modifier = Modifier.size(36.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Text(
+                text = texto,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
@@ -2709,621 +3280,201 @@ fun OpcionHidrometeorologica(
         }
     }
 }
-
-
-
+// ============================================
+// CICLONES TROPICALES / HURACANES
+// ============================================
 @Composable
-fun PantallaCiclonesTropicales(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = "Fenómenos Hidrometeorológicos",
-            fontSize = 18.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Ciclones tropicales / Huracanes",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = "Los ciclones tropicales son fenómenos naturales poderosos que se forman sobre aguas cálidas. Se clasifican como depresiones tropicales, tormentas tropicales, huracanes y huracanes extremos.",
-            fontSize = 17.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-        VideoPlayerExo(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp),
-            videoResId = R.raw.fhciclon
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Button(
-                onClick = onBack,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Button(
-                onClick = onMenu,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Button(
-                onClick = onNext,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Siguiente",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun PantallaInundaciones(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = "Fenómenos Hidrometeorológicos",
-            fontSize = 18.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Inundaciones",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = "Una inundación es un evento que aumenta el nivel del agua en ríos o mares, afectando áreas habitualmente secas y causando daños en población, agricultura, ganadería e infraestructura.",
-            fontSize = 17.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-        VideoPlayerExo(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp),
-            videoResId = R.raw.fhinundaciones
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Button(
-                onClick = onBack,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Button(
-                onClick = onMenu,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Button(
-                onClick = onNext,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Siguiente",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun PantallaHeladas(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    PantallaInfoHidromet(
-        titulo = "Heladas",
-        subtitulo = "Fenómenos Hidrometeorológicos",
-        descripcion = "Las heladas ocurren cuando la temperatura del aire baja a 0°C o menos durante más de cuatro horas.",
-        onBack = onBack,
-        onMenu = onMenu,
-        onNext = onNext,
-        videoResId = R.raw.fhheladas
-    )
-}
-
-@Composable
-fun PantallaNiebla(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    PantallaInfoHidromet(
-        titulo = "Niebla",
-        subtitulo = "Fenómenos Hidrometeorológicos",
-        descripcion = "La niebla consiste en gotas de agua suspendidas en el aire, reduciendo la visibilidad a menos de mil metros.",
-        onBack = onBack,
-        onMenu = onMenu,
-        onNext = onNext,
-        videoResId = R.raw.fhneblina
-    )
-}
-
-@Composable
-fun PantallaTormentasElectricas(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = "Fenómenos Hidrometeorológicos",
-            fontSize = 18.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Tormentas eléctricas",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = "Las tormentas eléctricas son descargas eléctricas bruscas de electricidad atmosférica que se manifiestan por un resplandor breve.",
-            fontSize = 17.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-        VideoPlayerExo(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp),
-            videoResId = R.raw.fhtormenta
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Button(
-                onClick = onBack,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Button(
-                onClick = onMenu,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Button(
-                onClick = onNext,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Siguiente",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun PantallaGranizo(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = "Fenómenos Hidrometeorológicos",
-            fontSize = 18.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Granizo",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = "El granizo es un tipo de precipitación en forma de piedras de hielo y se forma en las tormentas severas y pueden ser destructivas.",
-            fontSize = 17.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-        VideoPlayerExo(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp),
-            videoResId = R.raw.fhgranizo
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Button(
-                onClick = onBack,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Button(
-                onClick = onMenu,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Button(
-                onClick = onNext,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Siguiente",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun PantallaFrenteFrio(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = "Fenómenos Hidrometeorológicos",
-            fontSize = 18.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Frente frío",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = "Los frentes fríos son el choque de dos masas de aire, una fría y una cálida, impulsados por una masa de aire frío a una alta velocidad.",
-            fontSize = 17.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-        VideoPlayerExo(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp),
-            videoResId = R.raw.fhfrentefrio
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Button(
-                onClick = onBack,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Button(
-                onClick = onMenu,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Button(
-                onClick = onNext,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Siguiente",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun PantallaSequias(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    PantallaInfoHidromet(
-        titulo = "Sequías",
-        subtitulo = "Fenómenos Hidrometeorológicos",
-        descripcion = "La sequía es un fenómeno que ocurre cuando la precipitación en un lapso es menor que el promedio y puede afectar las actividades humanas.",
-        onBack = onBack,
-        onMenu = onMenu,
-        onNext = onNext,
-        videoResId = R.raw.fhsequia
-    )
-}
-
-@Composable
-fun PantallaInfoHidromet(
-    titulo: String,
-    subtitulo: String,
-    descripcion: String,
+fun PantallaCiclonesTropicales(
     onBack: () -> Unit,
     onMenu: () -> Unit,
-    onNext: () -> Unit,
-    videoResId: Int? = null
+    onNext: () -> Unit
 ) {
-    Column(
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "ciclones")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 24.dp, vertical = 12.dp)
     ) {
-        Spacer(modifier = Modifier.height(32.dp)) // Más espacio arriba
-        Text(
-            text = subtitulo,
-            fontSize = 18.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = titulo,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(20.dp)) // Más espacio entre título y texto
-        Text(
-            text = descripcion,
-            fontSize = 17.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(32.dp)) // Más espacio antes del video
-        // Video player
-        if (videoResId != null) {
-            VideoPlayerExo(
-                modifier = Modifier.fillMaxWidth().height(200.dp),
-                videoResId = videoResId
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos Hidrometeorológicos",
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
             )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Ciclones tropicales / Huracanes",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Los ciclones tropicales son fenómenos naturales poderosos que se forman sobre aguas cálidas. Se clasifican como depresiones tropicales, tormentas tropicales, huracanes y huracanes extremos.",
+                fontSize = 17.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.fhciclon
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas ciclones tropicales en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "ciclones", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "ciclones", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/smn") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("SMN", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
         }
-        Spacer(modifier = Modifier.weight(1f))
+
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
@@ -3333,16 +3484,9 @@ fun PantallaInfoHidromet(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
             Button(
                 onClick = onMenu,
@@ -3351,16 +3495,9 @@ fun PantallaInfoHidromet(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
             Button(
                 onClick = onNext,
@@ -3369,20 +3506,1651 @@ fun PantallaInfoHidromet(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
             ) {
-                Text(
-                    text = "Siguiente",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
             }
         }
     }
 }
+
+// ============================================
+// INUNDACIONES
+// ============================================
+@Composable
+fun PantallaInundaciones(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "inundaciones")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos Hidrometeorológicos",
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Inundaciones",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Una inundación es un evento que aumenta el nivel del agua en ríos o mares, afectando áreas habitualmente secas y causando daños en población, agricultura, ganadería e infraestructura.",
+                fontSize = 17.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.fhinundaciones
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas inundaciones en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "inundaciones", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "inundaciones", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/smn") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("SMN", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(
+                onClick = onBack,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onMenu,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onNext,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+        }
+    }
+}
+
+// ============================================
+// HELADAS
+// ============================================
+@Composable
+fun PantallaHeladas(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "heladas")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos Hidrometeorológicos",
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Heladas",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Las heladas ocurren cuando la temperatura del aire baja a 0°C o menos durante más de cuatro horas.",
+                fontSize = 17.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.fhheladas
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas heladas en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "heladas", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "heladas", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/smn") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("SMN", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(
+                onClick = onBack,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onMenu,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onNext,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+        }
+    }
+}
+
+// ============================================
+// NIEBLA
+// ============================================
+@Composable
+fun PantallaNiebla(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "niebla")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos Hidrometeorológicos",
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Niebla",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "La niebla consiste en gotas de agua suspendidas en el aire, reduciendo la visibilidad a menos de mil metros.",
+                fontSize = 17.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.fhneblina
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas niebla en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "niebla", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "niebla", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/smn") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("SMN", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(
+                onClick = onBack,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onMenu,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onNext,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+        }
+    }
+}
+
+// ============================================
+// TORMENTAS ELÉCTRICAS
+// ============================================
+@Composable
+fun PantallaTormentasElectricas(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "tormentas")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos Hidrometeorológicos",
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Tormentas eléctricas",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Las tormentas eléctricas son descargas eléctricas bruscas de electricidad atmosférica que se manifiestan por un resplandor breve.",
+                fontSize = 17.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.fhtormenta
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas tormentas eléctricas en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "tormentas", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "tormentas", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/smn") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("SMN", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(
+                onClick = onBack,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onMenu,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onNext,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+        }
+    }
+}
+
+// ============================================
+// GRANIZO
+// ============================================
+@Composable
+fun PantallaGranizo(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "granizo")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos Hidrometeorológicos",
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Granizo",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "El granizo es un tipo de precipitación en forma de piedras de hielo y se forma en las tormentas severas y pueden ser destructivas.",
+                fontSize = 17.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.fhgranizo
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas granizo en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "granizo", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "granizo", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/smn") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("SMN", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(
+                onClick = onBack,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onMenu,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onNext,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+        }
+    }
+}
+// ============================================
+// FRENTE FRÍO
+// ============================================
+@Composable
+fun PantallaFrenteFrio(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "frentefrio")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos Hidrometeorológicos",
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Frente frío",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Los frentes fríos son el choque de dos masas de aire, una fría y una cálida, impulsados por una masa de aire frío a una alta velocidad.",
+                fontSize = 17.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.fhfrentefrio
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas frentes fríos en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "frentefrio", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "frentefrio", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/smn") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("SMN", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(
+                onClick = onBack,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onMenu,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onNext,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+        }
+    }
+}
+
+// ============================================
+// SEQUÍAS
+// ============================================
+@Composable
+fun PantallaSequias(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "sequias")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos Hidrometeorológicos",
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Sequías",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "La sequía es un fenómeno que ocurre cuando la precipitación en un lapso es menor que el promedio y puede afectar las actividades humanas.",
+                fontSize = 17.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.fhsequia
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas sequías en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "sequias", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "sequias", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/smn") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("SMN", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(
+                onClick = onBack,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onMenu,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onNext,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+        }
+    }
+}
+
 @Composable
 fun PantallaRiesgosQuimicoTecnologicos(
     onBack: () -> Unit,
@@ -3390,12 +5158,6 @@ fun PantallaRiesgosQuimicoTecnologicos(
     onMenu: () -> Unit,
     onNavigate: (AppScreen) -> Unit
 ) {
-    val ctx = LocalContext.current
-    val scope = rememberCoroutineScope()
-
-    val context = LocalContext.current as MainActivity
-
-    // ✅ Estado para el desplegable de la descripción
     var expandedQuimicoTec by remember { mutableStateOf(false) }
 
     val opciones = listOf(
@@ -3407,16 +5169,6 @@ fun PantallaRiesgosQuimicoTecnologicos(
         "Incendios urbanos"
     )
 
-    // ✅ Estado inicial con el tamaño correcto
-    val checkedList = remember { mutableStateListOf<Boolean>() }
-
-    // ✅ Cargar datos guardados al iniciar la pantalla
-    LaunchedEffect(Unit) {
-        val saved = LocalStore.getSelections(ctx, "quimicotec")
-        checkedList.clear()
-        checkedList.addAll(opciones.map { it in saved })
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -3426,46 +5178,22 @@ fun PantallaRiesgosQuimicoTecnologicos(
     ) {
         Spacer(modifier = Modifier.height(32.dp))
 
-        // ✅ Cálculo del tamaño responsivo usando recursos
-        val resources = LocalContext.current.resources
-        val screenWidthDp = resources.displayMetrics.widthPixels / resources.displayMetrics.density
-
-        val titleFontSize = when {
-            screenWidthDp < 360 -> 18.sp
-            screenWidthDp < 412 -> 20.sp
-            screenWidthDp < 600 -> 22.sp
-            else -> 26.sp
-        }
-
-        val lineHeightSize = when {
-            screenWidthDp < 360 -> 22.sp
-            screenWidthDp < 412 -> 24.sp
-            screenWidthDp < 600 -> 26.sp
-            else -> 30.sp
-        }
-
-        // ✅ Título con ícono desplegable
+        // Título con ícono desplegable
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Spacer(modifier = Modifier.width(32.dp))
             Text(
                 text = "Fenómenos Químico-Tecnológicos",
-                fontSize = titleFontSize,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 8.dp),
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                lineHeight = lineHeightSize
+                lineHeight = 28.sp
             )
+            Spacer(modifier = Modifier.width(8.dp))
             IconButton(
                 onClick = { expandedQuimicoTec = !expandedQuimicoTec },
                 modifier = Modifier.size(32.dp)
@@ -3473,15 +5201,14 @@ fun PantallaRiesgosQuimicoTecnologicos(
                 Icon(
                     imageVector = if (expandedQuimicoTec) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                     contentDescription = "Más información",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(28.dp)
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // ✅ Descripción desplegable
+        // Descripción desplegable
         AnimatedVisibility(
             visible = expandedQuimicoTec,
             enter = expandVertically() + fadeIn(),
@@ -3506,6 +5233,16 @@ fun PantallaRiesgosQuimicoTecnologicos(
             videoResId = R.raw.fenomenoquimicotec
         )
         Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Te invitamos a ver las siguientes cápsulas dando click al ícono:",
+            fontSize = 15.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+
         Spacer(modifier = Modifier.height(12.dp))
 
         Column(
@@ -3513,17 +5250,8 @@ fun PantallaRiesgosQuimicoTecnologicos(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             opciones.forEachIndexed { idx, texto ->
-                OpcionQuimicoTecnologico(
+                OpcionQuimicoTecnologicoSimple(
                     texto = texto,
-                    checked = checkedList.getOrNull(idx) ?: false,
-                    onCheckedChange = { checked ->
-                        // ✅ Actualizar estado local
-                        if (idx < checkedList.size) checkedList[idx] = checked
-                        // ✅ Guardar en DataStore (solo aquí, no duplicado)
-                        scope.launch {
-                            LocalStore.updateSelection(ctx, "quimicotec", texto, checked)
-                        }
-                    },
                     onClick = {
                         onNavigate(
                             when (idx) {
@@ -3540,36 +5268,12 @@ fun PantallaRiesgosQuimicoTecnologicos(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
-            // Botón de envío
-            Button(onClick = {
-                // Construir la lista de seleccionadas
-                val seleccionadas = opciones.filterIndexed { index, _ -> checkedList[index] }
-                val seleccionadasString = seleccionadas.joinToString(", ")
-
-                context.agregarDatos(
-                    categoria = "QUIMICO_TECNOLOGICO",
-                    seleccion = seleccionadasString
-                )
-            }) {
-                Text("Guardar Selección")
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // ✅ Cálculo del tamaño responsivo para botones
-        val buttonFontSize = when {
-            screenWidthDp < 360 -> 12.sp
-            screenWidthDp < 412 -> 13.sp
-            else -> 14.sp
-        }
-
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
@@ -3581,15 +5285,17 @@ fun PantallaRiesgosQuimicoTecnologicos(
                 ),
                 modifier = Modifier
                     .weight(1f)
-                    .height(48.dp)
                     .padding(horizontal = 4.dp)
+                    .height(48.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Text(
-                    "Regresar",
-                    fontSize = buttonFontSize,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
+                    text = "Regresar",
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    minLines = 1,
+                    lineHeight = 16.sp
                 )
             }
             Button(
@@ -3601,15 +5307,17 @@ fun PantallaRiesgosQuimicoTecnologicos(
                 ),
                 modifier = Modifier
                     .weight(1f)
-                    .height(48.dp)
                     .padding(horizontal = 4.dp)
+                    .height(48.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Text(
-                    "Actividad",
-                    fontSize = buttonFontSize,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
+                    text = "Actividad",
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    minLines = 1,
+                    lineHeight = 16.sp
                 )
             }
             Button(
@@ -3621,15 +5329,17 @@ fun PantallaRiesgosQuimicoTecnologicos(
                 ),
                 modifier = Modifier
                     .weight(1f)
-                    .height(48.dp)
                     .padding(horizontal = 4.dp)
+                    .height(48.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Text(
-                    "Menú",
-                    fontSize = buttonFontSize,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
+                    text = "Menú",
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    minLines = 1,
+                    lineHeight = 16.sp
                 )
             }
         }
@@ -3637,17 +5347,15 @@ fun PantallaRiesgosQuimicoTecnologicos(
 }
 
 @Composable
-fun OpcionQuimicoTecnologico(
+fun OpcionQuimicoTecnologicoSimple(
     texto: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    onClick: (() -> Unit)? = null
+    onClick: () -> Unit
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(72.dp)
-            .clickable(enabled = onClick != null) { onClick?.invoke() },
+            .height(56.dp)
+            .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         shadowElevation = 4.dp,
         color = MaterialTheme.colorScheme.surface
@@ -3659,57 +5367,51 @@ fun OpcionQuimicoTecnologico(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier
-                    .size(40.dp),
+                modifier = Modifier.size(40.dp),
                 contentAlignment = Alignment.Center
             ) {
                 when (texto) {
                     "Almacenamiento y transportación de combustibles" -> Image(
                         painter = painterResource(id = R.drawable.contaminaciondelsuelo),
-                        contentDescription = "Contaminación del suelo",
+                        contentDescription = texto,
                         modifier = Modifier.size(36.dp)
                     )
                     "Fugas de gas y derrames de sustancias" -> Image(
                         painter = painterResource(id = R.drawable.fugadegas),
-                        contentDescription = "Fuga de gas",
+                        contentDescription = texto,
                         modifier = Modifier.size(36.dp)
                     )
                     "Manejo de residuos peligrosos" -> Image(
                         painter = painterResource(id = R.drawable.residuos),
-                        contentDescription = "Residuos peligrosos",
+                        contentDescription = texto,
                         modifier = Modifier.size(36.dp)
                     )
                     "Explosiones" -> Image(
                         painter = painterResource(id = R.drawable.explosiones),
-                        contentDescription = "Explosiones",
+                        contentDescription = texto,
                         modifier = Modifier.size(36.dp)
                     )
                     "Incendios forestales" -> Image(
                         painter = painterResource(id = R.drawable.incendiosforestales),
-                        contentDescription = "Incendios forestales",
+                        contentDescription = texto,
                         modifier = Modifier.size(36.dp)
                     )
                     "Incendios urbanos" -> Image(
                         painter = painterResource(id = R.drawable.incendiosurbanos),
-                        contentDescription = "Incendios urbanos",
+                        contentDescription = texto,
                         modifier = Modifier.size(36.dp)
                     )
                 }
             }
-            Spacer(modifier = Modifier.size(2.dp))
+
+            Spacer(modifier = Modifier.width(12.dp))
+
             Text(
                 text = texto,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f),
-                maxLines = 3
-            )
-            // ✅ CORRECCIÓN: Eliminamos la lógica duplicada del Checkbox
-            // Solo queda el onCheckedChange que viene del padre
-            Checkbox(
-                checked = checked,
-                onCheckedChange = onCheckedChange
+                modifier = Modifier.weight(1f)
             )
         }
     }
@@ -3730,259 +5432,802 @@ fun PantallaSocioOrganizativos(onBack: () -> Unit, onMenu: () -> Unit) {
         Button(onClick = onMenu) { Text("Menú") }
     }
 }
-
 @Composable
-fun PantallaAlmacenamientoCombustibles(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    Column(
+fun PantallaAlmacenamientoCombustibles(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "almacenamiento")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 24.dp, vertical = 12.dp)
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = "Fenómenos químico – tecnológicos",
-            fontSize = 18.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Almacenamiento y transportación de combustibles",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = "El almacenamiento y la transportación de combustible consiste en el conjunto de recintos y recipientes usados para contener productos químicos combustibles.",
-            fontSize = 17.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-        VideoPlayerExo(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp),
-            videoResId = R.raw.qtalmacenamiento
-        )
-        Spacer(modifier = Modifier.weight(1f))
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos químico – tecnológicos",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Almacenamiento y transportación de combustibles",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "El almacenamiento y la transportación de combustible consiste en el conjunto de recintos y recipientes usados para contener productos químicos combustibles.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.qtalmacenamiento
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas tanques o depósitos de combustible en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "almacenamiento", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "almacenamiento", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección Civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Button(
-                onClick = onBack,
-                shape = RoundedCornerShape(8.dp),
+            Button(onClick = onBack, shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Button(
-                onClick = onMenu,
-                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Regresar", fontSize = 15.sp, textAlign = TextAlign.Center) }
+
+            Button(onClick = onMenu, shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Button(
-                onClick = onNext,
-                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Menú", fontSize = 15.sp, textAlign = TextAlign.Center) }
+
+            Button(onClick = onNext, shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Siguiente",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Siguiente", fontSize = 15.sp, textAlign = TextAlign.Center) }
         }
     }
 }
 
 @Composable
-fun PantallaFugasGas(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    Column(
+fun PantallaFugasGas(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "fugas")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 24.dp, vertical = 12.dp)
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = "Fenómenos químico – tecnológicos",
-            fontSize = 18.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Fugas de gas y derrames de sustancias",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = "La fugas de gas y derrames de sustancias es la emisión de gas o sustancias fuera de un sistema por fracturas, rupturas o diferentes afectaciones al mismo.",
-            fontSize = 17.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-        VideoPlayerExo(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp),
-            videoResId = R.raw.qtfugasdegas
-        )
-        Spacer(modifier = Modifier.weight(1f))
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos químico – tecnológicos",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Fugas de gas",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Las fugas de gas ocurren cuando los sistemas de almacenamiento o conducción presentan deterioro o fallas, liberando gas al ambiente y representando riesgo de explosión o intoxicación.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.qtfugasdegas
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas fugas de gas o instalaciones deterioradas en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "fugas", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "fugas", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección Civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Button(
-                onClick = onBack,
-                shape = RoundedCornerShape(8.dp),
+            Button(onClick = onBack, shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Button(
-                onClick = onMenu,
-                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Regresar", fontSize = 15.sp, textAlign = TextAlign.Center) }
+
+            Button(onClick = onMenu, shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Button(
-                onClick = onNext,
-                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Menú", fontSize = 15.sp, textAlign = TextAlign.Center) }
+
+            Button(onClick = onNext, shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Siguiente", fontSize = 15.sp, textAlign = TextAlign.Center) }
+        }
+    }
+}
+
+
+
+@Composable
+fun PantallaResiduosPeligrosos(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "residuos")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos químico – tecnológicos",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Residuos peligrosos",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Los residuos peligrosos son materiales que, por su composición química o características, representan riesgos para la salud humana y el ambiente si no se manejan adecuadamente.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
                 modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.qtmanejoderesiduos
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
             ) {
-                Text(
-                    text = "Siguiente",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas residuos peligrosos o químicos mal almacenados en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "residuos", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "residuos", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección Civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(onClick = onBack, shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Regresar", fontSize = 15.sp, textAlign = TextAlign.Center) }
+
+            Button(onClick = onMenu, shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Menú", fontSize = 15.sp, textAlign = TextAlign.Center) }
+
+            Button(onClick = onNext, shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Siguiente", fontSize = 15.sp, textAlign = TextAlign.Center) }
         }
     }
 }
 
 @Composable
-fun PantallaResiduosPeligrosos(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    Column(
+fun PantallaExplosionesQT(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "explosiones")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 24.dp, vertical = 12.dp)
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = "Fenómenos químico – tecnológicos",
-            fontSize = 18.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Manejo de residuos peligrosos",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = "El manejo de residuos peligrosos es cuando se manejan sustancias que pueden representar un peligro como el Gas L.P., amoniaco, cloro, etc.",
-            fontSize = 17.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-        VideoPlayerExo(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp),
-            videoResId = R.raw.qtmanejoderesiduos
-        )
-        Spacer(modifier = Modifier.weight(1f))
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos Químico–Tecnológicos",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Explosiones",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Las explosiones pueden deberse a fugas de gas, manejo inadecuado de sustancias químicas o fallas en instalaciones industriales.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.qtexplociones
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Identificación
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas riesgos de explosiones en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        // Sí
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "explosiones", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        // No
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "explosiones", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val enlaces = listOf(
+                "Protección Civil" to "http://www.proteccioncivil.gob.mx/",
+                "CENAPRED" to "https://www.gob.mx/cenapred",
+            )
+
+            enlaces.forEachIndexed { index, (nombre, url) ->
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .clickable { uriHandler.openUri(url) },
+                    shape = RoundedCornerShape(16.dp),
+                    shadowElevation = 4.dp,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Text(nombre, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+                if (index < enlaces.lastIndex) Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+
+        // Botones inferiores
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
@@ -3995,14 +6240,8 @@ fun PantallaResiduosPeligrosos(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
                 modifier = Modifier
                     .widthIn(min = 100.dp)
                     .height(48.dp)
-            ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
+            ) { Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center) }
+
             Button(
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
@@ -4013,14 +6252,8 @@ fun PantallaResiduosPeligrosos(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
                 modifier = Modifier
                     .widthIn(min = 100.dp)
                     .height(48.dp)
-            ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
+            ) { Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center) }
+
             Button(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
@@ -4031,166 +6264,409 @@ fun PantallaResiduosPeligrosos(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
                 modifier = Modifier
                     .widthIn(min = 100.dp)
                     .height(48.dp)
+            ) { Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center) }
+        }
+    }
+}
+
+
+@Composable
+fun PantallaIncendiosForestalesQT(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "incendios_forestales")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos de Origen Natural",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Incendios forestales",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Los incendios forestales son fuegos no controlados que afectan áreas de vegetación, provocados por causas naturales o humanas.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.qtincenciosforestales
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
             ) {
-                Text(
-                    text = "Siguiente",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas incendios forestales en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "incendios_forestales", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "incendios_forestales", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val enlaces = listOf(
+                "CONAFOR" to "https://www.gob.mx/conafor",
+                "CENAPRED" to "https://www.gob.mx/cenapred",
+                "SEMARNAT" to "https://www.gob.mx/semarnat"
+            )
+
+            enlaces.forEachIndexed { index, (nombre, url) ->
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .clickable { uriHandler.openUri(url) },
+                    shape = RoundedCornerShape(16.dp),
+                    shadowElevation = 4.dp,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Text(nombre, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+                if (index < enlaces.lastIndex) Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(
+                onClick = onBack,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Regresar", fontSize = 15.sp) }
+
+            Button(
+                onClick = onMenu,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Menú", fontSize = 15.sp) }
+
+            Button(
+                onClick = onNext,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Siguiente", fontSize = 15.sp) }
         }
     }
 }
 
 @Composable
-fun PantallaExplosionesQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    Column(
+fun PantallaIncendiosUrbanosQT(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "incendios_urbanos")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 24.dp, vertical = 12.dp)
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = "Fenómenos químico – tecnológicos",
-            fontSize = 18.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Explosiones",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = "Las explosiones se originan a partir de una reacción química, por ignición o calentamiento de algunos materiales provocando una expansión violenta de los gases.",
-            fontSize = 17.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-        VideoPlayerExo(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp),
-            videoResId = R.raw.qtexplociones
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Button(
-                onClick = onBack,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos Químico–Tecnológicos",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Incendios urbanos",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Los incendios urbanos se originan principalmente por cortocircuitos, fugas de gas, descuidos domésticos o mal manejo de materiales inflamables.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
                 modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.qtincendiosurbanos
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Identificación
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
             ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas incendios urbanos en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        // Sí
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "incendios_urbanos", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(
+                                1.dp,
+                                if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                            ),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        // No
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "incendios_urbanos", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(
+                                1.dp,
+                                if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                            ),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
             }
-            Button(
-                onClick = onMenu,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Button(
-                onClick = onNext,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Siguiente",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val enlaces = listOf(
+                "Protección Civil" to "http://www.proteccioncivil.gob.mx/",
+                "CENAPRED" to "https://www.gob.mx/cenapred",
+            )
+
+            enlaces.forEachIndexed { index, (nombre, url) ->
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .clickable { uriHandler.openUri(url) },
+                    shape = RoundedCornerShape(16.dp),
+                    shadowElevation = 4.dp,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(nombre, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+                if (index < enlaces.lastIndex) Spacer(modifier = Modifier.height(12.dp))
             }
         }
-    }
-}
 
-@Composable
-fun PantallaIncendiosForestalesQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = "Fenómenos químico – tecnológicos",
-            fontSize = 18.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Incendios forestales",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = "Lo incendios forestales ocurren cuando el fuego se extiende de manera descontrolada y afecta a bosques, selvas o vegetación.",
-            fontSize = 17.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-        VideoPlayerExo(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp),
-            videoResId = R.raw.qtincenciosforestales
-        )
-        Spacer(modifier = Modifier.weight(1f))
+        // Botones inferiores
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
@@ -4200,121 +6676,9 @@ fun PantallaIncendiosForestalesQT(onBack: () -> Unit, onMenu: () -> Unit, onNext
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Button(
-                onClick = onMenu,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Button(
-                onClick = onNext,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Siguiente",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-}
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Regresar", fontSize = 15.sp) }
 
-@Composable
-fun PantallaIncendiosUrbanosQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(32.dp))
-        Text(
-            text = "Fenómenos químico – tecnológicos",
-            fontSize = 18.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Incendios urbanos",
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = "Los incendios urbanos son reacciones químicas que se manifiesta en escenarios urbanos  y desprende luz, calor, humo y gases en grandes cantidades.",
-            fontSize = 17.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(32.dp))
-        VideoPlayerExo(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp),
-            videoResId = R.raw.qtincendiosurbanos
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Button(
-                onClick = onBack,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Regresar",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
             Button(
                 onClick = onMenu,
                 shape = RoundedCornerShape(8.dp),
@@ -4322,17 +6686,9 @@ fun PantallaIncendiosUrbanosQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Menú",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Menú", fontSize = 15.sp) }
+
             Button(
                 onClick = onNext,
                 shape = RoundedCornerShape(8.dp),
@@ -4340,17 +6696,8 @@ fun PantallaIncendiosUrbanosQT(onBack: () -> Unit, onMenu: () -> Unit, onNext: (
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                modifier = Modifier
-                    .widthIn(min = 100.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = "Siguiente",
-                    fontSize = 15.sp,
-                    maxLines = 3,
-                    textAlign = TextAlign.Center
-                )
-            }
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Siguiente", fontSize = 15.sp) }
         }
     }
 }
@@ -4362,12 +6709,6 @@ fun PantallaRiesgosSanitarioEcologicos(
     onMenu: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
-    val ctx = LocalContext.current
-    val scope = rememberCoroutineScope()
-
-    val context = LocalContext.current as MainActivity
-
-    // ✅ Estado para el desplegable de la descripción
     var expandedSanitarioEco by remember { mutableStateOf(false) }
 
     val opciones = listOf(
@@ -4378,16 +6719,6 @@ fun PantallaRiesgosSanitarioEcologicos(
         "Epidemias"
     )
 
-    // ✅ Estado inicial dinámico
-    val checkedList = remember { mutableStateListOf<Boolean>() }
-
-    // ✅ Cargar datos guardados al iniciar la pantalla
-    LaunchedEffect(Unit) {
-        val saved = LocalStore.getSelections(ctx, "sanitarioeco")
-        checkedList.clear()
-        checkedList.addAll(opciones.map { it in saved })
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -4397,46 +6728,22 @@ fun PantallaRiesgosSanitarioEcologicos(
     ) {
         Spacer(modifier = Modifier.height(32.dp))
 
-        // ✅ Cálculo del tamaño responsivo
-        val resources = LocalContext.current.resources
-        val screenWidthDp = resources.displayMetrics.widthPixels / resources.displayMetrics.density
-
-        val titleFontSize = when {
-            screenWidthDp < 360 -> 18.sp
-            screenWidthDp < 412 -> 20.sp
-            screenWidthDp < 600 -> 22.sp
-            else -> 26.sp
-        }
-
-        val lineHeightSize = when {
-            screenWidthDp < 360 -> 22.sp
-            screenWidthDp < 412 -> 24.sp
-            screenWidthDp < 600 -> 26.sp
-            else -> 30.sp
-        }
-
-        // ✅ Título con ícono desplegable
+        // Título con ícono desplegable
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Spacer(modifier = Modifier.width(32.dp))
             Text(
                 text = "Fenómenos Sanitario-Ecológicos",
-                fontSize = titleFontSize,
+                fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 8.dp),
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                lineHeight = lineHeightSize
+                lineHeight = 30.sp
             )
+            Spacer(modifier = Modifier.width(8.dp))
             IconButton(
                 onClick = { expandedSanitarioEco = !expandedSanitarioEco },
                 modifier = Modifier.size(32.dp)
@@ -4444,15 +6751,14 @@ fun PantallaRiesgosSanitarioEcologicos(
                 Icon(
                     imageVector = if (expandedSanitarioEco) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                     contentDescription = "Más información",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(28.dp)
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // ✅ Descripción desplegable
+        // Descripción desplegable
         AnimatedVisibility(
             visible = expandedSanitarioEco,
             enter = expandVertically() + fadeIn(),
@@ -4477,58 +6783,35 @@ fun PantallaRiesgosSanitarioEcologicos(
             videoResId = R.raw.fenomenosnitarioeco
         )
         Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Te invitamos a ver las siguientes cápsulas dando click al ícono:",
+            fontSize = 15.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+
         Spacer(modifier = Modifier.height(12.dp))
 
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            opciones.forEachIndexed { idx, texto ->
-                OpcionSanitarioEcologico(
+            opciones.forEach { texto ->
+                OpcionSanitarioEcologicoSimple(
                     texto = texto,
-                    checked = checkedList.getOrNull(idx) ?: false,
-                    onCheckedChange = { checked ->
-                        // ✅ Actualizar estado local
-                        if (idx < checkedList.size) checkedList[idx] = checked
-                        // ✅ Guardar en DataStore (solo aquí, no duplicado)
-                        scope.launch {
-                            LocalStore.updateSelection(ctx, "sanitarioeco", texto, checked)
-                        }
-                    },
                     onClick = { onNavigate(texto) }
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
-            // Botón de envío
-            Button(onClick = {
-                // Construir la lista de seleccionadas
-                val seleccionadas = opciones.filterIndexed { index, _ -> checkedList[index] }
-                val seleccionadasString = seleccionadas.joinToString(", ")
-
-                context.agregarDatos(
-                    categoria = "SANITARIO_ECOLOGICOS",
-                    seleccion = seleccionadasString
-                )
-            }) {
-                Text("Guardar Selección")
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // ✅ Cálculo del tamaño responsivo para botones
-        val buttonFontSize = when {
-            screenWidthDp < 360 -> 12.sp
-            screenWidthDp < 412 -> 13.sp
-            else -> 14.sp
-        }
-
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
@@ -4540,15 +6823,17 @@ fun PantallaRiesgosSanitarioEcologicos(
                 ),
                 modifier = Modifier
                     .weight(1f)
-                    .height(48.dp)
                     .padding(horizontal = 4.dp)
+                    .height(48.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Text(
-                    "Regresar",
-                    fontSize = buttonFontSize,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
+                    text = "Regresar",
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    minLines = 1,
+                    lineHeight = 16.sp
                 )
             }
             Button(
@@ -4560,15 +6845,17 @@ fun PantallaRiesgosSanitarioEcologicos(
                 ),
                 modifier = Modifier
                     .weight(1f)
-                    .height(48.dp)
                     .padding(horizontal = 4.dp)
+                    .height(48.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Text(
-                    "Actividad",
-                    fontSize = buttonFontSize,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
+                    text = "Actividad",
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    minLines = 1,
+                    lineHeight = 16.sp
                 )
             }
             Button(
@@ -4580,15 +6867,17 @@ fun PantallaRiesgosSanitarioEcologicos(
                 ),
                 modifier = Modifier
                     .weight(1f)
-                    .height(48.dp)
                     .padding(horizontal = 4.dp)
+                    .height(48.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Text(
-                    "Menú",
-                    fontSize = buttonFontSize,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
+                    text = "Menú",
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    minLines = 1,
+                    lineHeight = 16.sp
                 )
             }
         }
@@ -4596,17 +6885,15 @@ fun PantallaRiesgosSanitarioEcologicos(
 }
 
 @Composable
-fun OpcionSanitarioEcologico(
+fun OpcionSanitarioEcologicoSimple(
     texto: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    onClick: (() -> Unit)? = null
+    onClick: () -> Unit
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(72.dp)
-            .clickable(enabled = onClick != null) { onClick?.invoke() },
+            .height(56.dp)
+            .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         shadowElevation = 4.dp,
         color = MaterialTheme.colorScheme.surface
@@ -4618,116 +6905,1183 @@ fun OpcionSanitarioEcologico(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier
-                    .size(40.dp),
+                modifier = Modifier.size(40.dp),
                 contentAlignment = Alignment.Center
             ) {
                 when (texto) {
                     "Contaminación del aire" -> Image(
                         painter = painterResource(id = R.drawable.contaminaciondelaire),
-                        contentDescription = "Contaminación del aire",
+                        contentDescription = texto,
                         modifier = Modifier.size(36.dp)
                     )
                     "Contaminación del agua" -> Image(
                         painter = painterResource(id = R.drawable.contaminaciondelagua),
-                        contentDescription = "Contaminación del agua",
+                        contentDescription = texto,
                         modifier = Modifier.size(36.dp)
                     )
                     "Contaminación del suelo" -> Image(
                         painter = painterResource(id = R.drawable.contaminaciondelsuelo),
-                        contentDescription = "Contaminación del suelo",
+                        contentDescription = texto,
                         modifier = Modifier.size(36.dp)
                     )
                     "Plagas" -> Image(
                         painter = painterResource(id = R.drawable.plagas),
-                        contentDescription = "Plagas",
+                        contentDescription = texto,
                         modifier = Modifier.size(36.dp)
                     )
                     "Epidemias" -> Image(
                         painter = painterResource(id = R.drawable.epidemias),
-                        contentDescription = "Epidemias",
+                        contentDescription = texto,
                         modifier = Modifier.size(36.dp)
                     )
                 }
             }
-            Spacer(modifier = Modifier.size(2.dp))
+
+            Spacer(modifier = Modifier.width(12.dp))
+
             Text(
                 text = texto,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f),
-                maxLines = 3
-            )
-            // ✅ CORRECCIÓN: Eliminamos la lógica duplicada del Checkbox
-            // Solo queda el onCheckedChange que viene del padre
-            Checkbox(
-                checked = checked,
-                onCheckedChange = onCheckedChange
+                modifier = Modifier.weight(1f)
             )
         }
     }
 }
 
+// ============================================
+// CONTAMINACIÓN DEL AIRE
+// ============================================
 @Composable
-fun PantallaContaminacionAire(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    PantallaInfoSanitarioEco(
-        titulo = "Fenómenos sanitario – ecológicos\nContaminación del aire",
-        descripcion = "La contaminación del aire es la presencia en la atmósfera de uno o más elementos físicos, químicos o biológicos suspendidos en grandes concentraciones.",
-        onBack = onBack,
-        onMenu = onMenu,
-        onNext = onNext,
-        videoResId = R.raw.fsecontaminaciondeaire
-    )
+fun PantallaContaminacionAire(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "contaminacion_aire")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos sanitario – ecológicos",
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Contaminación del aire",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "La contaminación del aire es la presencia en la atmósfera de uno o más elementos físicos, químicos o biológicos suspendidos en grandes concentraciones.",
+                fontSize = 17.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.fsecontaminaciondeaire
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas contaminación del aire en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "contaminacion_aire", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "contaminacion_aire", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(
+                onClick = onBack,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onMenu,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onNext,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+        }
+    }
 }
 
+// ============================================
+// CONTAMINACIÓN DEL AGUA
+// ============================================
 @Composable
-fun PantallaContaminacionAgua(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    PantallaInfoSanitarioEco(
-        titulo = "Fenómenos sanitario – ecológicos\nContaminación del agua",
-        descripcion = "La contaminación del agua se da cuando se le incorpora materias extrañas al agua, tal como microorganismos, químicos e industriales.",
-        onBack = onBack,
-        onMenu = onMenu,
-        onNext = onNext,
-        videoResId = R.raw.fsecontaminaciondeagua
-    )
+fun PantallaContaminacionAgua(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "contaminacion_agua")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos sanitario – ecológicos",
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Contaminación del agua",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "La contaminación del agua se da cuando se le incorpora materias extrañas al agua, tal como microorganismos, químicos e industriales.",
+                fontSize = 17.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.fsecontaminaciondeagua
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas contaminación del agua en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "contaminacion_agua", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "contaminacion_agua", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(
+                onClick = onBack,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onMenu,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onNext,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+        }
+    }
 }
 
+// ============================================
+// CONTAMINACIÓN DEL SUELO
+// ============================================
 @Composable
-fun PantallaContaminacionSuelo(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    PantallaInfoSanitarioEco(
-        titulo = "Fenómenos sanitario – ecológicos\nContaminación del suelo",
-        descripcion = "La contaminación del suelo sucede con la incorporación de material como basura, desechos tóxicos, productos químicos y desechos industriales.",
-        onBack = onBack,
-        onMenu = onMenu,
-        onNext = onNext,
-        videoResId = R.raw.fsecontaminaciondesuelo
-    )
+fun PantallaContaminacionSuelo(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "contaminacion_suelo")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos sanitario – ecológicos",
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Contaminación del suelo",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "La contaminación del suelo sucede con la incorporación de material como basura, desechos tóxicos, productos químicos y desechos industriales.",
+                fontSize = 17.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.fsecontaminaciondesuelo
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas contaminación del suelo en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "contaminacion_suelo", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "contaminacion_suelo", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(
+                onClick = onBack,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onMenu,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onNext,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+        }
+    }
 }
 
+// ============================================
+// PLAGAS
+// ============================================
 @Composable
-fun PantallaPlagas(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    PantallaInfoSanitarioEco(
-        titulo = "Fenómenos sanitario – ecológicos\nPlagas",
-        descripcion = "Las plagas son fauna y flora dañina que afecta la salud de las personas, infraestructura urbana y el ambiente.",
-        onBack = onBack,
-        onMenu = onMenu,
-        onNext = onNext,
-        videoResId = R.raw.fseplagas
-    )
+fun PantallaPlagas(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "plagas")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos sanitario – ecológicos",
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Plagas",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Las plagas son fauna y flora dañina que afecta la salud de las personas, infraestructura urbana y el ambiente.",
+                fontSize = 17.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.fseplagas
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas plagas en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "plagas", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "plagas", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/smn") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("SMN", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(
+                onClick = onBack,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onMenu,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onNext,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+        }
+    }
 }
 
+// ============================================
+// EPIDEMIAS
+// ============================================
 @Composable
-fun PantallaEpidemias(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    PantallaInfoSanitarioEco(
-        titulo = "Fenómenos sanitario – ecológicos\nEpidemias",
-        descripcion = "Las epidemias son el aumento inusual del número de casos de una enfermedad determinada en una población específica, en un periodo determinado.",
-        onBack = onBack,
-        onMenu = onMenu,
-        onNext = onNext,
-        videoResId = R.raw.fseepidemias
-    )
+fun PantallaEpidemias(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "epidemias")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos sanitario – ecológicos",
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Epidemias",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Las epidemias son el aumento inusual del número de casos de una enfermedad determinada en una población específica, en un periodo determinado.",
+                fontSize = 17.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.fseepidemias
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas epidemias en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "epidemias", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "epidemias", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/smn") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("SMN", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/cenapred") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("CENAPRED", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(
+                onClick = onBack,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onMenu,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+            Button(
+                onClick = onNext,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center)
+            }
+        }
+    }
 }
+
 
 @Composable
 fun PantallaInfoSanitarioEco(
@@ -5135,43 +8489,662 @@ fun OpcionSocioOrganizativo(
 }
 
 @Composable
-fun PantallaAccidentesCarreteros(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    PantallaInfoSocioOrg(
-        titulo = "Fenómenos socio – organizativos\nAccidentes carreteros, ferroviarios y aéreos",
-        descripcion = "Los accidentes carreteros, ferroviarios y aéreos se producen por errores humanos, fallas en los equipos, sobrecargas o por distintas fallas.",
-        onBack = onBack,
-        onMenu = onMenu,
-        onNext = onNext,
-        esUltimo = false,
-        videoResId = R.raw.fsoaccdentescar
-    )
+fun PantallaAccidentesCarreteros(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "accidentes")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos Socio–Organizativos",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Accidentes carreteros, ferroviarios y aéreos",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Estos accidentes pueden ser causados por errores humanos, fallas mecánicas o condiciones climáticas adversas, generando riesgos a la población y daños materiales considerables.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.fsoaccdentescar
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas riesgos de accidentes carreteros, ferroviarios o aéreos en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "accidentes", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "accidentes", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val links = listOf(
+                "Protección Civil" to "https://www.gob.mx/proteccion-civil",
+                "SSPC" to "https://www.gob.mx/sspc",
+                )
+
+            links.forEach { (titulo, url) ->
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .clickable { uriHandler.openUri(url) },
+                    shape = RoundedCornerShape(16.dp),
+                    shadowElevation = 4.dp,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(titulo, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(
+                onClick = onBack,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Regresar", fontSize = 15.sp)
+            }
+            Button(
+                onClick = onMenu,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Menú", fontSize = 15.sp)
+            }
+            Button(
+                onClick = onNext,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) {
+                Text("Siguiente", fontSize = 15.sp)
+            }
+        }
+    }
+}
+
+
+@Composable
+fun PantallaConcentracionPersonas(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "concentracionpersonas")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos socio – organizativos",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Concentración masiva de personas",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "La concentración masiva de personas ocurre cuando grandes grupos se reúnen en espacios públicos como estadios, auditorios o plazas, lo que puede representar un riesgo ante emergencias.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.fsoconsentracionmasiva
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas concentraciones masivas de personas en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "concentracionpersonas", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "concentracionpersonas", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/sspc") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("SSPC", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+        }
+
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(
+                onClick = onBack,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center) }
+
+            Button(
+                onClick = onMenu,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center) }
+
+            Button(
+                onClick = onNext,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center) }
+        }
+    }
 }
 
 @Composable
-fun PantallaConcentracionPersonas(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    PantallaInfoSocioOrg(
-        titulo = "Fenómenos socio – organizativos\nConcentración masiva de personas",
-        descripcion = "La concentración masiva de personas es la reunión de mucha gente en lugares grandes como estadios, plazas o auditorios.",
-        onBack = onBack,
-        onMenu = onMenu,
-        onNext = onNext,
-        esUltimo = false,
-        videoResId = R.raw.fsoconsentracionmasiva
-    )
+fun PantallaTerrorismoSabotaje(
+    onBack: () -> Unit,
+    onMenu: () -> Unit,
+    onNext: () -> Unit
+) {
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+
+    var identificaSi by remember { mutableStateOf(false) }
+    var identificaNo by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val saved = LocalStore.getIdentificacion(ctx, "terrorismosabotaje")
+        identificaSi = saved == "si"
+        identificaNo = saved == "no"
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp, vertical = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 70.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                text = "Fenómenos socio – organizativos",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Terrorismo y sabotaje",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "El terrorismo, sabotaje o vandalismo son actos intencionales que buscan causar daño o infundir miedo, afectando la seguridad pública y privada.",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            VideoPlayerExo(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                videoResId = R.raw.fsoterrorismo
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Identificas riesgos de terrorismo o sabotaje en tu entorno?",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 8.dp)
+                                .clickable {
+                                    identificaSi = !identificaSi
+                                    if (identificaSi) identificaNo = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "terrorismosabotaje", if (identificaSi) "si" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("Sí", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaSi, onCheckedChange = null)
+                            }
+                        }
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp)
+                                .clickable {
+                                    identificaNo = !identificaNo
+                                    if (identificaNo) identificaSi = false
+                                    scope.launch {
+                                        LocalStore.saveIdentificacion(ctx, "terrorismosabotaje", if (identificaNo) "no" else "")
+                                    }
+                                },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (identificaNo) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text("No", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Checkbox(checked = identificaNo, onCheckedChange = null)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Para conocer más sobre el tema, visita las páginas siguientes:",
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clickable { uriHandler.openUri("http://www.proteccioncivil.gob.mx/") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Protección civil", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clickable { uriHandler.openUri("https://www.gob.mx/sspc") },
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("SSPC", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+        }
+
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(
+                onClick = onBack,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Regresar", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center) }
+
+            Button(
+                onClick = onMenu,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Menú", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center) }
+
+            Button(
+                onClick = onNext,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier.widthIn(min = 100.dp).height(48.dp)
+            ) { Text("Siguiente", fontSize = 15.sp, maxLines = 1, textAlign = TextAlign.Center) }
+        }
+    }
 }
 
-@Composable
-fun PantallaTerrorismoSabotaje(onBack: () -> Unit, onMenu: () -> Unit, onNext: () -> Unit) {
-    PantallaInfoSocioOrg(
-        titulo = "Fenómenos socio – organizativos\nTerrorismo y sabotaje",
-        descripcion = "El terrorismo, sabotaje o vandalismo es una forma de afectación de carácter público y privado en la que se infunde terror y se pone en riesgo a la población.",
-        onBack = onBack,
-        onMenu = onMenu,
-        onNext = onNext,
-        esUltimo = true,
-        videoResId = R.raw.fsoterrorismo
-    )
-}
 
 @Composable
 fun PantallaInfoSocioOrg(

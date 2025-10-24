@@ -13,7 +13,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// ✅ Inicialización del DataStore a nivel de extensión de Context
+// Inicialización del DataStore a nivel de extensión de Context
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "preparat_prefs")
 
 object LocalStore {
@@ -24,7 +24,7 @@ object LocalStore {
     private fun answerKey(section: String) = stringPreferencesKey("sopa_answer_$section")
     private fun identificacionKey(fenomeno: String) = stringPreferencesKey("identificacion_$fenomeno")
 
-    // ✅ Constantes para las secciones válidas
+    //  Constantes para las secciones válidas
     object Sections {
         const val GEOLOGICOS = "geologicos"
         const val HIDROMET = "hidromet"
@@ -35,7 +35,7 @@ object LocalStore {
         val ALL = listOf(GEOLOGICOS, HIDROMET, QUIMICOTEC, SANITARIOECO, SOCIOORG)
     }
 
-    // ✅ Constantes para los fenómenos
+    // Constantes para los fenómenos
     object Fenomenos {
         const val ERUPCION = "erupcion"
         const val SISMO = "sismo"
@@ -107,7 +107,7 @@ object LocalStore {
         }
     }
 
-    // ✅ Función para borrar todas las selecciones de una sección
+    // Función para borrar todas las selecciones de una sección
     suspend fun clearSelections(context: Context, section: String) {
         try {
             val key = selectionKey(section)
@@ -200,7 +200,7 @@ object LocalStore {
         }
     }
 
-    // ✅ Limpiar identificación de un fenómeno
+    //  Limpiar identificación de un fenómeno
     suspend fun clearIdentificacion(context: Context, fenomeno: String) {
         try {
             val key = identificacionKey(fenomeno)
@@ -221,7 +221,7 @@ object LocalStore {
         return getSelections(context, section).size
     }
 
-    // ✅ Verificar si los datos están completos para una sección
+    //  Verificar si los datos están completos para una sección
     suspend fun isSectionComplete(context: Context, section: String): Boolean {
         val hasSelections = hasAnySelections(context, section)
         val hasAnswer = !getAnswer(context, section).isNullOrBlank()
@@ -230,7 +230,7 @@ object LocalStore {
         return hasSelections && (hasAnswer || hasFoundWords)
     }
 
-    // ✅ Contar identificaciones completadas
+    //  Contar identificaciones completadas
     suspend fun getIdentificacionesCount(context: Context): Int {
         return try {
             Fenomenos.ALL.count { fenomeno ->
@@ -296,7 +296,7 @@ object LocalStore {
         }
     }
 
-    // ✅ Función para importar datos (mejorada)
+    //  Función para importar datos (mejorada)
     suspend fun importFromFile(context: Context, file: File) {
         try {
             val jsonString = file.readText()
@@ -343,7 +343,7 @@ object LocalStore {
         }
     }
 
-    // ✅ Función para limpiar todos los datos (útil para testing o reset)
+    // Función para limpiar todos los datos (útil para testing o reset)
     suspend fun clearAllData(context: Context) {
         try {
             context.dataStore.edit { preferences ->
@@ -355,5 +355,5 @@ object LocalStore {
     }
 }
 
-// ✅ Excepción personalizada para mejor manejo de errores
+// Excepción personalizada para mejor manejo de errores
 class LocalStoreException(message: String) : Exception(message)
