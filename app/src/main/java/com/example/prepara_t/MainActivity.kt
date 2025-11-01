@@ -94,6 +94,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.ImageLoader
 import coil.decode.GifDecoder
+import android.content.Context
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.CheckboxDefaults
@@ -1518,6 +1519,8 @@ fun PantallaErupcionVolcanica(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -1590,16 +1593,28 @@ fun PantallaErupcionVolcanica(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
+                        // OPCIÓN SI, AUTOGUARDADO
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "erupcion", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "erupcion",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "GEOLOGICOS",
+                                            seleccion = "Erupción volcánica"
+                                        )
                                     }
+
                                 },
                             shape = RoundedCornerShape(8.dp),
                             border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
@@ -1750,6 +1765,8 @@ fun PantallaSismo(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -1828,9 +1845,15 @@ fun PantallaSismo(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "sismo", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(ctx, "sismo", if (identificaSi) "si" else "")
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "GEOLOGICOS",
+                                            seleccion = "Sismo"
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -1996,6 +2019,7 @@ fun PantallaTsunami(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -2074,9 +2098,19 @@ fun PantallaTsunami(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "tsunami", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "tsunami",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "GEOLOGICOS",
+                                            seleccion = "Tsunami"
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -2228,6 +2262,7 @@ fun PantallaGrietas(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -2306,10 +2341,21 @@ fun PantallaGrietas(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "grietas", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "grietas",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "GEOLOGICOS",
+                                            seleccion = "Grietas"
+                                        )
                                     }
+
                                 },
                             shape = RoundedCornerShape(8.dp),
                             border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
@@ -2460,6 +2506,7 @@ fun PantallaDeslizamientoLaderas(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -2538,10 +2585,19 @@ fun PantallaDeslizamientoLaderas(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "deslizamiento", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(ctx, "deslizamiento", if (identificaSi) "si" else "")
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "GEOLOGICOS",
+                                            seleccion = "Deslizamiento de laderas"
+                                        )
+
                                     }
+
                                 },
                             shape = RoundedCornerShape(8.dp),
                             border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
@@ -2692,6 +2748,7 @@ fun PantallaHundimientosSocavones(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -2770,9 +2827,20 @@ fun PantallaHundimientosSocavones(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "hundimientos", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "hundimientos",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "GEOLOGICOS",
+                                            seleccion = "Hundimientos y socavones "
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -3292,6 +3360,8 @@ fun PantallaCiclonesTropicales(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -3372,9 +3442,19 @@ fun PantallaCiclonesTropicales(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "ciclones", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "ciclones",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "HIDROMETEOROLOGICOS",
+                                            seleccion = "Ciclones tropicales"
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -3526,6 +3606,8 @@ fun PantallaInundaciones(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -3606,10 +3688,21 @@ fun PantallaInundaciones(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "inundaciones", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "inundaciones",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "HIDROMETEOROLOGICOS",
+                                            seleccion = "Inundaciones"
+                                        )
                                     }
+
                                 },
                             shape = RoundedCornerShape(8.dp),
                             border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
@@ -3760,6 +3853,8 @@ fun PantallaHeladas(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -3840,9 +3935,19 @@ fun PantallaHeladas(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "heladas", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "heladas",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "HIDROMETEOROLOGICOS",
+                                            seleccion = "Heladas"
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -3994,6 +4099,8 @@ fun PantallaNiebla(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -4074,9 +4181,19 @@ fun PantallaNiebla(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "niebla", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "niebla",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "HIDROMETEOROLOGICOS",
+                                            seleccion = "Niebla"
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -4228,6 +4345,8 @@ fun PantallaTormentasElectricas(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -4308,9 +4427,19 @@ fun PantallaTormentasElectricas(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "tormentas", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "tormentas",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "HIDROMETEOROLOGICOS",
+                                            seleccion = "Tormentas eléctricas"
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -4462,6 +4591,8 @@ fun PantallaGranizo(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -4542,9 +4673,19 @@ fun PantallaGranizo(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "granizo", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "granizo",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "HIDROMETEOROLOGICOS",
+                                            seleccion = "Granizo"
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -4695,6 +4836,8 @@ fun PantallaFrenteFrio(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -4775,9 +4918,19 @@ fun PantallaFrenteFrio(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "frentefrio", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "frentefrio",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "HIDROMETEOROLOGICOS",
+                                            seleccion = "Frente frío"
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -4929,6 +5082,8 @@ fun PantallaSequias(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -5009,9 +5164,19 @@ fun PantallaSequias(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "sequias", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "sequias",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "HIDROMETEOROLOGICOS",
+                                            seleccion = "Sequías"
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -5441,6 +5606,8 @@ fun PantallaAlmacenamientoCombustibles(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -5517,9 +5684,19 @@ fun PantallaAlmacenamientoCombustibles(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "almacenamiento", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "almacenamiento",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "QUIMICO_TECNOLOGICO",
+                                            seleccion = "Almacenamiento y transportación de combustibles"
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -5645,6 +5822,8 @@ fun PantallaFugasGas(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -5722,9 +5901,19 @@ fun PantallaFugasGas(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "fugas", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "fugas",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "QUIMICO_TECNOLOGICO",
+                                            seleccion = "Fugas de gas y derrames de sustancias"
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -5852,6 +6041,8 @@ fun PantallaResiduosPeligrosos(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -5929,9 +6120,19 @@ fun PantallaResiduosPeligrosos(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "residuos", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "residuos",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "QUIMICO_TECNOLOGICO",
+                                            seleccion = "Manejo de residuos peligrosos"
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -6057,6 +6258,8 @@ fun PantallaExplosionesQT(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -6138,9 +6341,19 @@ fun PantallaExplosionesQT(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "explosiones", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "explosiones",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "QUIMICO_TECNOLOGICO",
+                                            seleccion = "Explosiones"
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -6279,6 +6492,8 @@ fun PantallaIncendiosForestalesQT(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -6358,9 +6573,19 @@ fun PantallaIncendiosForestalesQT(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "incendios_forestales", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "incendios_forestales",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "QUIMICO_TECNOLOGICO",
+                                            seleccion = "Incendios forestales"
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -6489,6 +6714,8 @@ fun PantallaIncendiosUrbanosQT(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -6570,9 +6797,19 @@ fun PantallaIncendiosUrbanosQT(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "incendios_urbanos", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "incendios_urbanos",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "QUIMICO_TECNOLOGICO",
+                                            seleccion = "Incendios urbanos "
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -6962,6 +7199,7 @@ fun PantallaContaminacionAire(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -7042,10 +7280,21 @@ fun PantallaContaminacionAire(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "contaminacion_aire", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "contaminacion_aire",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "SANITARIO_ECOLOGICOS",
+                                            seleccion = "Contaminación del aire "
+                                        )
                                     }
+
                                 },
                             shape = RoundedCornerShape(8.dp),
                             border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
@@ -7182,6 +7431,8 @@ fun PantallaContaminacionAgua(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -7262,9 +7513,19 @@ fun PantallaContaminacionAgua(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "contaminacion_agua", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "contaminacion_agua",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "SANITARIO_ECOLOGICOS",
+                                            seleccion = "Contaminación del agua"
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -7404,6 +7665,8 @@ fun PantallaContaminacionSuelo(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -7484,9 +7747,19 @@ fun PantallaContaminacionSuelo(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "contaminacion_suelo", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "contaminacion_suelo",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "SANITARIO_ECOLOGICOS",
+                                            seleccion = "Contaminación del suelo"
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -7626,6 +7899,8 @@ fun PantallaPlagas(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -7706,9 +7981,19 @@ fun PantallaPlagas(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "plagas", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "plagas",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "SANITARIO_ECOLOGICOS",
+                                            seleccion = "Plagas"
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -7860,6 +8145,8 @@ fun PantallaEpidemias(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -7940,9 +8227,19 @@ fun PantallaEpidemias(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "epidemias", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "epidemias",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "SANITARIO_ECOLOGICOS",
+                                            seleccion = "Epidemias"
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -8328,19 +8625,7 @@ fun PantallaRiesgosSocioOrganizativos(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
             }
-            // Botón de envío
-            Button(onClick = {
-                // Construir la lista de seleccionadas
-                val seleccionadas = opciones.filterIndexed { index, _ -> checkedList[index] }
-                val seleccionadasString = seleccionadas.joinToString(", ")
 
-                context.agregarDatos(
-                    categoria = "SOCIO_ORGANIZATIVOS",
-                    seleccion = seleccionadasString
-                )
-            }) {
-                Text("Guardar Selección")
-            }
 
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -8479,11 +8764,11 @@ fun OpcionSocioOrganizativo(
                 maxLines = 3
             )
             // ✅ CORRECCIÓN: Eliminamos la lógica duplicada del Checkbox
-            // Solo queda el onCheckedChange que viene del padre
+            /* Solo queda el onCheckedChange que viene del padre
             Checkbox(
                 checked = checked,
                 onCheckedChange = onCheckedChange
-            )
+            )*/
         }
     }
 }
@@ -8497,6 +8782,8 @@ fun PantallaAccidentesCarreteros(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -8575,9 +8862,19 @@ fun PantallaAccidentesCarreteros(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "accidentes", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "accidentes",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "SOCIO_ORGANIZATIVOS",
+                                            seleccion = "Accidentes carreteros, ferroviarios y aéreos "
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -8712,6 +9009,8 @@ fun PantallaConcentracionPersonas(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -8790,9 +9089,19 @@ fun PantallaConcentracionPersonas(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "concentracionpersonas", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "concentracionpersonas",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "SOCIO_ORGANIZATIVOS",
+                                            seleccion = "Concentración masivas de personas "
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -8933,6 +9242,8 @@ fun PantallaTerrorismoSabotaje(
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current as MainActivity
+
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
@@ -9011,9 +9322,19 @@ fun PantallaTerrorismoSabotaje(
                                 .padding(end = 8.dp)
                                 .clickable {
                                     identificaSi = !identificaSi
-                                    if (identificaSi) identificaNo = false
-                                    scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "terrorismosabotaje", if (identificaSi) "si" else "")
+                                    if (identificaSi) {
+                                        identificaNo = false
+                                        scope.launch {
+                                            LocalStore.saveIdentificacion(
+                                                ctx,
+                                                "terrorismosabotaje",
+                                                if (identificaSi) "si" else ""
+                                            )
+                                        }
+                                        context.agregarDatos(
+                                            categoria = "SOCIO_ORGANIZATIVOS",
+                                            seleccion = "Terrorismo y sabotaje "
+                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -9855,8 +10176,10 @@ fun SopaLetrasScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    val imageLoader = ImageLoader.Builder(LocalContext.current)
-                        .components { add(GifDecoder.Factory()) }
+                    val imageLoader = coil.ImageLoader.Builder(LocalContext.current)
+                        .components {
+                            add(coil.decode.GifDecoder.Factory())
+                        }
                         .build()
 
                     AsyncImage(
