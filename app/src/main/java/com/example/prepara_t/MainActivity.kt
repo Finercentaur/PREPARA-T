@@ -95,9 +95,12 @@ import coil.request.ImageRequest
 import coil.ImageLoader
 import coil.decode.GifDecoder
 import android.content.Context
+import android.view.ViewGroup
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.lifecycle.lifecycleScope
 
 // Enum para manejar las diferentes pantallas de la aplicación
 enum class AppScreen {
@@ -160,7 +163,7 @@ fun PREPARATTheme(
         background = Color.White,
         onBackground = Color.Black
     )
-    
+
     val darkColorScheme = darkColorScheme(
         primary = Color(0xFF009ab9),
         secondary = Color(0xFF009ab9),
@@ -171,23 +174,29 @@ fun PREPARATTheme(
         background = Color(0xFF424242),
         onBackground = Color.White
     )
-    
+
     MaterialTheme(
         colorScheme = if (isDarkTheme) darkColorScheme else lightColorScheme,
         content = content
     )
 }
 
-public var codigoPostal: String = ""
+
 class MainActivity : ComponentActivity() {
+
+    var codigoPostal by mutableStateOf("")
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        lifecycleScope.launch {
+            codigoPostal = LocalStore.getPostalCode(this@MainActivity) ?: ""
+        }
+
         setContent {
             // Estado para controlar el tema (modo claro por defecto)
             var isDarkTheme by remember { mutableStateOf(false) }
-            
+
             PREPARATTheme(isDarkTheme = isDarkTheme) { // Aplica el tema definido en el proyecto
                 Surface(
                     modifier = Modifier
@@ -466,16 +475,23 @@ class MainActivity : ComponentActivity() {
         }
 
     }
-    fun agregarDatos(categoria: String, seleccion: String){
+
+    fun agregarDatos(categoria: String, seleccion: String = "", actividad: String = "", estado:String = ""){
+
+        val userID = IdUsuario(this)
+        val cp = codigoPostal
+
         CoroutineScope(Dispatchers.IO).launch{
 
             val fila = when (categoria) {
-                "GEOLOGICOS" ->           listOf(codigoPostal, seleccion, "", "", "", "")
-                "HIDROMETEOROLOGICOS" ->  listOf(codigoPostal, "", seleccion, "", "", "")
-                "QUIMICO_TECNOLOGICO" ->  listOf(codigoPostal, "", "", seleccion, "", "")
-                "SANITARIO_ECOLOGICOS" -> listOf(codigoPostal, "", "", "", seleccion, "")
-                "SOCIO_ORGANIZATIVOS" ->  listOf(codigoPostal, "", "", "", "", seleccion)
-                else -> listOf(codigoPostal, "", "", "", "", "")
+                "GEOLOGICOS" ->           listOf(userID,cp, seleccion, "", "", "", "","","")
+                "HIDROMETEOROLOGICOS" ->  listOf(userID,cp, "", seleccion, "", "", "","","")
+                "QUIMICO_TECNOLOGICO" ->  listOf(userID,cp, "", "", seleccion, "", "","","")
+                "SANITARIO_ECOLOGICOS" -> listOf(userID,cp, "", "", "", seleccion, "","","")
+                "SOCIO_ORGANIZATIVOS" ->  listOf(userID,cp, "", "", "", "", seleccion,"","")
+
+                "ACTIVIDAD" ->     listOf(userID,cp, "", "", "", "", "",actividad,estado)
+                else -> listOf(userID,cp, "", "", "", "", "","","")
             }
 
             val registro = db_REGISTROSData(
@@ -484,10 +500,26 @@ class MainActivity : ComponentActivity() {
                 rows = listOf(fila)
             )
 
-            val response = RetrofitUser.webService(DirectorioURL.url_post).agregarRegistro(registro)
+            RetrofitUser.webService(DirectorioURL.url_post).agregarRegistro(registro)
         }
     }
 
+}
+
+fun IdUsuario(context: Context): String {
+    val prefs = context.getSharedPreferences("APP_PREFS", Context.MODE_PRIVATE)
+    var userID = prefs.getString("id_usuario", null)
+
+    if (userID == null) {
+        val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        userID = (1..4)
+            .map { chars.random() }
+            .joinToString("")
+
+        prefs.edit().putString("id_usuario", userID).apply()
+    }
+
+    return userID
 }
 
 /**
@@ -508,6 +540,10 @@ fun PantallaInicio(
     var mostrarError by remember { mutableStateOf(false) }
     var mensajeError by remember { mutableStateOf("") }
     val postalCodeViewModel: PostalCodeViewModel = viewModel()
+
+    val activity = LocalContext.current as MainActivity
+    var postalCode = activity.codigoPostal
+
 
     // Cargamos el código postal guardado al iniciar
     LaunchedEffect(Unit) {
@@ -603,7 +639,7 @@ fun PantallaInicio(
                     else -> {
                         // Guardamos el código postal
                         postalCodeViewModel.savePostalCode(codigoPostalText)
-                        codigoPostal = codigoPostalText
+                        postalCode = codigoPostalText
                         mostrarError = false
                         // Navegamos a la pantalla de fenómenos
                         onNavigateToFenomenos()
@@ -704,9 +740,9 @@ fun PantallaCreditos(
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.weight(1f))
-        
+
         // Botón para cambiar tema (movido al menú principal)
-        
+
         // Botón para regresar al menú
         Button(
             onClick = onBackToMenu,
@@ -735,6 +771,10 @@ fun PantallaInicioFenomenos(
     var expandedFenomenos by remember { mutableStateOf(false) }
     var expandedNatural by remember { mutableStateOf(false) }
     var expandedAntropico by remember { mutableStateOf(false) }
+
+    val activity = LocalContext.current as MainActivity
+    val postalCode = activity.codigoPostal
+
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -1176,6 +1216,10 @@ fun PantallaGeologicos(
     // ✅ Estado para el desplegable de la descripción
     var expandedGeologicos by remember { mutableStateOf(false) }
 
+    val activity = LocalContext.current as MainActivity
+    val postalCode = activity.codigoPostal
+
+
     // Opciones de fenómenos
     val opciones = listOf(
         "Erupción volcánica",
@@ -1357,6 +1401,10 @@ fun OpcionGeologicaSimple(
     texto: String,
     onClick: (() -> Unit)? = null
 ) {
+
+    val activity = LocalContext.current as MainActivity
+    val postalCode = activity.codigoPostal
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -1458,7 +1506,7 @@ fun VideoPlayerExo(
     val exoPlayer = remember(videoResId) {
         ExoPlayer.Builder(context).build().apply {
             val uri = "android.resource://${context.packageName}/raw/" +
-                context.resources.getResourceEntryName(videoResId)
+                    context.resources.getResourceEntryName(videoResId)
             setMediaItem(MediaItem.fromUri(uri))
             prepare()
             playWhenReady = false
@@ -1473,9 +1521,9 @@ fun VideoPlayerExo(
                 player = exoPlayer
                 useController = true
                 setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                layoutParams = android.view.ViewGroup.LayoutParams(
-                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                    android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
                 )
             }
         },
@@ -1499,7 +1547,7 @@ fun BotonMenu(
         shape = RoundedCornerShape(8.dp), // Esquinas redondeadas
         colors = ButtonDefaults.buttonColors(
             containerColor = backgroundColor, // Color de fondo del botón
-                    contentColor = MaterialTheme.colorScheme.onSurface // Color del texto del botón
+            contentColor = MaterialTheme.colorScheme.onSurface // Color del texto del botón
         ),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp) // Sombra
     ) {
@@ -1521,15 +1569,28 @@ fun PantallaErupcionVolcanica(
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current as MainActivity
 
-
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "erupcion")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "erupcion"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
+
 
     Box(
         modifier = Modifier
@@ -1595,31 +1656,46 @@ fun PantallaErupcionVolcanica(
                     ) {
                         // OPCIÓN SI, AUTOGUARDADO
                         Surface(
+                            shape = RoundedCornerShape(8.dp),
+
+                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            color = MaterialTheme.colorScheme.surface,
                             modifier = Modifier
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "erupcion",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "erupcion",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "GEOLOGICOS",
+                                                seleccion = "Erupción volcánica"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "erupcion",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "GEOLOGICOS",
-                                            seleccion = "Erupción volcánica"
-                                        )
                                     }
-
-                                },
-                            shape = RoundedCornerShape(8.dp),
-                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
-                            color = MaterialTheme.colorScheme.surface
-                        ) {
+                                }
+                        ){
                             Row(
                                 modifier = Modifier.padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -1639,7 +1715,7 @@ fun PantallaErupcionVolcanica(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "erupcion", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "erupcion", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -1767,12 +1843,24 @@ fun PantallaSismo(
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current as MainActivity
 
-
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "sismo")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "sismo"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -1844,16 +1932,35 @@ fun PantallaSismo(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
-                                            LocalStore.saveIdentificacion(ctx, "sismo", if (identificaSi) "si" else "")
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "sismo",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "GEOLOGICOS",
+                                                seleccion = "Sismo"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "sismo",
+                                                respuesta = ""
+                                            )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "GEOLOGICOS",
-                                            seleccion = "Sismo"
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -1879,7 +1986,7 @@ fun PantallaSismo(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "sismo", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "sismo", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -2023,12 +2130,27 @@ fun PantallaTsunami(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "tsunami")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "tsunami"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
+
 
     Box(
         modifier = Modifier
@@ -2097,20 +2219,35 @@ fun PantallaTsunami(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "tsunami",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "tsunami",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "GEOLOGICOS",
+                                                seleccion = "Tsunami"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "tsunami",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "GEOLOGICOS",
-                                            seleccion = "Tsunami"
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -2136,7 +2273,7 @@ fun PantallaTsunami(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "tsunami", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "tsunami", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -2266,9 +2403,22 @@ fun PantallaGrietas(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "grietas")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "grietas"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -2340,22 +2490,36 @@ fun PantallaGrietas(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "grietas",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "grietas",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "GEOLOGICOS",
+                                                seleccion = "Grietas"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "grietas",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "GEOLOGICOS",
-                                            seleccion = "Grietas"
-                                        )
                                     }
-
                                 },
                             shape = RoundedCornerShape(8.dp),
                             border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
@@ -2380,7 +2544,7 @@ fun PantallaGrietas(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "grietas", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "grietas", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -2510,9 +2674,23 @@ fun PantallaDeslizamientoLaderas(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "deslizamiento")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "deslizamiento"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -2584,20 +2762,36 @@ fun PantallaDeslizamientoLaderas(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
 
-                                        scope.launch {
-                                            LocalStore.saveIdentificacion(ctx, "deslizamiento", if (identificaSi) "si" else "")
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "deslizamiento",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "GEOLOGICOS",
+                                                seleccion = "Deslizamiento de laderas"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "deslizamiento",
+                                                respuesta = ""
+                                            )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "GEOLOGICOS",
-                                            seleccion = "Deslizamiento de laderas"
-                                        )
-
                                     }
-
                                 },
                             shape = RoundedCornerShape(8.dp),
                             border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
@@ -2622,7 +2816,7 @@ fun PantallaDeslizamientoLaderas(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "deslizamiento", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "deslizamiento", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -2752,9 +2946,23 @@ fun PantallaHundimientosSocavones(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "hundimientos")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "hundimientos"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -2826,21 +3034,35 @@ fun PantallaHundimientosSocavones(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
-                                    identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
 
-                                        scope.launch {
+                                    if (postalCode.isBlank()) return@clickable
+
+                                    identificaSi = !identificaSi
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "hundimientos",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "hundimientos",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "GEOLOGICOS",
+                                                seleccion = "Hundimientos y socavones"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "hundimientos",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "GEOLOGICOS",
-                                            seleccion = "Hundimientos y socavones "
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -2866,7 +3088,7 @@ fun PantallaHundimientosSocavones(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "hundimientos", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "hundimientos", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -3365,9 +3587,23 @@ fun PantallaCiclonesTropicales(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "ciclones")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "ciclones"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -3441,20 +3677,35 @@ fun PantallaCiclonesTropicales(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "ciclones",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "ciclones",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "HIDROMETEOROLOGICOS",
+                                                seleccion = "Ciclones tropicales"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "ciclones",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "HIDROMETEOROLOGICOS",
-                                            seleccion = "Ciclones tropicales"
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -3480,7 +3731,7 @@ fun PantallaCiclonesTropicales(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "ciclones", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "ciclones", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -3611,9 +3862,23 @@ fun PantallaInundaciones(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "inundaciones")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "inundaciones"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -3687,22 +3952,36 @@ fun PantallaInundaciones(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "inundaciones",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "inundaciones",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "HIDROMETEOROLOGICOS",
+                                                seleccion = "Inundaciones"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "inundaciones",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "HIDROMETEOROLOGICOS",
-                                            seleccion = "Inundaciones"
-                                        )
                                     }
-
                                 },
                             shape = RoundedCornerShape(8.dp),
                             border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
@@ -3727,7 +4006,7 @@ fun PantallaInundaciones(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "inundaciones", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "inundaciones", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -3858,9 +4137,23 @@ fun PantallaHeladas(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "heladas")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "heladas"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -3934,20 +4227,35 @@ fun PantallaHeladas(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "heladas",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "heladas",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "HIDROMETEOROLOGICOS",
+                                                seleccion = "Heladas"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "heladas",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "HIDROMETEOROLOGICOS",
-                                            seleccion = "Heladas"
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -3973,7 +4281,7 @@ fun PantallaHeladas(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "heladas", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "heladas", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -4104,9 +4412,23 @@ fun PantallaNiebla(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "niebla")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "niebla"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -4180,20 +4502,35 @@ fun PantallaNiebla(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "niebla",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "niebla",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "HIDROMETEOROLOGICOS",
+                                                seleccion = "Niebla"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "niebla",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "HIDROMETEOROLOGICOS",
-                                            seleccion = "Niebla"
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -4219,7 +4556,7 @@ fun PantallaNiebla(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "niebla", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "niebla", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -4350,9 +4687,23 @@ fun PantallaTormentasElectricas(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "tormentas")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "tormentas"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -4426,20 +4777,35 @@ fun PantallaTormentasElectricas(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "tormentas",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "tormentas",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "HIDROMETEOROLOGICOS",
+                                                seleccion = "Tormentas eléctricas"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "tormentas",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "HIDROMETEOROLOGICOS",
-                                            seleccion = "Tormentas eléctricas"
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -4465,7 +4831,7 @@ fun PantallaTormentasElectricas(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "tormentas", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "tormentas", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -4596,9 +4962,23 @@ fun PantallaGranizo(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "granizo")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "granizo"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -4672,20 +5052,35 @@ fun PantallaGranizo(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "granizo",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "granizo",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "HIDROMETEOROLOGICOS",
+                                                seleccion = "Granizo"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "granizo",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "HIDROMETEOROLOGICOS",
-                                            seleccion = "Granizo"
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -4711,7 +5106,7 @@ fun PantallaGranizo(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "granizo", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "granizo", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -4841,9 +5236,23 @@ fun PantallaFrenteFrio(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "frentefrio")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "frentefrio"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -4917,20 +5326,35 @@ fun PantallaFrenteFrio(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "frentefrio",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "frentefrio",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "HIDROMETEOROLOGICOS",
+                                                seleccion = "Frente frío"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "frentefrio",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "HIDROMETEOROLOGICOS",
-                                            seleccion = "Frente frío"
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -4956,7 +5380,7 @@ fun PantallaFrenteFrio(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "frentefrio", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "frentefrio", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -5087,9 +5511,23 @@ fun PantallaSequias(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "sequias")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "sequias"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -5163,20 +5601,35 @@ fun PantallaSequias(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "sequias",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "sequias",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "HIDROMETEOROLOGICOS",
+                                                seleccion = "Sequías"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "sequias",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "HIDROMETEOROLOGICOS",
-                                            seleccion = "Sequías"
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -5202,7 +5655,7 @@ fun PantallaSequias(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "sequias", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx, postalCode , "sequias", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -5611,9 +6064,23 @@ fun PantallaAlmacenamientoCombustibles(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "almacenamiento")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "almacenamiento"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -5683,20 +6150,35 @@ fun PantallaAlmacenamientoCombustibles(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "almacenamiento",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "almacenamiento",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "QUIMICO_TECNOLOGICO",
+                                                seleccion = "Almacenamiento y transportación de combustibles"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "almacenamiento",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "QUIMICO_TECNOLOGICO",
-                                            seleccion = "Almacenamiento y transportación de combustibles"
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -5721,7 +6203,7 @@ fun PantallaAlmacenamientoCombustibles(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "almacenamiento", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "almacenamiento", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -5827,9 +6309,23 @@ fun PantallaFugasGas(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "fugas")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "fugas"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -5900,20 +6396,35 @@ fun PantallaFugasGas(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "fugas",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "fugas",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "QUIMICO_TECNOLOGICO",
+                                                seleccion = "Fugas de gas y derrames de sustancias"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "fugas",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "QUIMICO_TECNOLOGICO",
-                                            seleccion = "Fugas de gas y derrames de sustancias"
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -5938,7 +6449,7 @@ fun PantallaFugasGas(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "fugas", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "fugas", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -6046,9 +6557,23 @@ fun PantallaResiduosPeligrosos(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "residuos")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "residuos"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -6119,20 +6644,35 @@ fun PantallaResiduosPeligrosos(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "residuos",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "residuos",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "QUIMICO_TECNOLOGICO",
+                                                seleccion = "Manejo de residuos peligrosos"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "residuos",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "QUIMICO_TECNOLOGICO",
-                                            seleccion = "Manejo de residuos peligrosos"
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -6157,7 +6697,7 @@ fun PantallaResiduosPeligrosos(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "residuos", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "residuos", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -6263,9 +6803,23 @@ fun PantallaExplosionesQT(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "explosiones")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "explosiones"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -6340,20 +6894,35 @@ fun PantallaExplosionesQT(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "explosiones",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "explosiones",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "QUIMICO_TECNOLOGICO",
+                                                seleccion = "Explosiones"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "explosiones",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "QUIMICO_TECNOLOGICO",
-                                            seleccion = "Explosiones"
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -6380,7 +6949,7 @@ fun PantallaExplosionesQT(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "explosiones", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "explosiones", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -6497,9 +7066,23 @@ fun PantallaIncendiosForestalesQT(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "incendios_forestales")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "incendios_forestales"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -6572,20 +7155,35 @@ fun PantallaIncendiosForestalesQT(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "incendios_forestales",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "incendios_forestales",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "QUIMICO_TECNOLOGICO",
+                                                seleccion = "Incendios forestales"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "incendios_forestales",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "QUIMICO_TECNOLOGICO",
-                                            seleccion = "Incendios forestales"
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -6611,7 +7209,7 @@ fun PantallaIncendiosForestalesQT(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "incendios_forestales", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "incendios_forestales", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -6719,9 +7317,23 @@ fun PantallaIncendiosUrbanosQT(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "incendios_urbanos")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "incendios_urbanos"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -6796,20 +7408,35 @@ fun PantallaIncendiosUrbanosQT(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "incendios_urbanos",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "incendios_urbanos",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "QUIMICO_TECNOLOGICO",
+                                                seleccion = "Incendios urbanos"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "incendios_urbanos",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "QUIMICO_TECNOLOGICO",
-                                            seleccion = "Incendios urbanos "
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -6839,7 +7466,7 @@ fun PantallaIncendiosUrbanosQT(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "incendios_urbanos", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "incendios_urbanos", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -7203,9 +7830,23 @@ fun PantallaContaminacionAire(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "contaminacion_aire")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "contaminacion_aire"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -7270,46 +7911,60 @@ fun PantallaContaminacionAire(
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(12.dp))
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp)
+                            .clickable {
+
+                                if (postalCode.isBlank()) return@clickable
+
+                                identificaSi = !identificaSi
+
+                                scope.launch {
+                                    if (identificaSi) {
+                                        identificaNo = false
+
+                                        LocalStore.saveIdentificacion(
+                                            context = ctx,
+                                            postalCode = postalCode,
+                                            fenomeno = "contaminacion_aire",
+                                            respuesta = "si"
+                                        )
+
+                                        activity.agregarDatos(
+                                            categoria = "SANITARIO_ECOLOGICOS",
+                                            seleccion = "Contaminación del aire"
+                                        )
+
+                                    } else {
+                                        LocalStore.saveIdentificacion(
+                                            context = ctx,
+                                            postalCode = postalCode,
+                                            fenomeno = "contaminacion_aire",
+                                            respuesta = ""
+                                        )
+                                    }
+                                }
+                            },
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                        color = MaterialTheme.colorScheme.surface
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text("Sí", fontSize = 16.sp)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Checkbox(checked = identificaSi, onCheckedChange = null)
+                        }
+                    }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 8.dp)
-                                .clickable {
-                                    identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
-                                            LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "contaminacion_aire",
-                                                if (identificaSi) "si" else ""
-                                            )
-                                        }
-                                        context.agregarDatos(
-                                            categoria = "SANITARIO_ECOLOGICOS",
-                                            seleccion = "Contaminación del aire "
-                                        )
-                                    }
-
-                                },
-                            shape = RoundedCornerShape(8.dp),
-                            border = BorderStroke(1.dp, if (identificaSi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
-                            color = MaterialTheme.colorScheme.surface
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Text("Sí", fontSize = 16.sp)
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Checkbox(checked = identificaSi, onCheckedChange = null)
-                            }
-                        }
 
                         Surface(
                             modifier = Modifier
@@ -7319,7 +7974,7 @@ fun PantallaContaminacionAire(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "contaminacion_aire", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "contaminacion_aire", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -7436,9 +8091,23 @@ fun PantallaContaminacionAgua(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "contaminacion_agua")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "contaminacion_agua"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -7512,20 +8181,35 @@ fun PantallaContaminacionAgua(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "contaminacion_agua",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "contaminacion_agua",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "SANITARIO_ECOLOGICOS",
+                                                seleccion = "Contaminación del agua"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "contaminacion_agua",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "SANITARIO_ECOLOGICOS",
-                                            seleccion = "Contaminación del agua"
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -7551,7 +8235,7 @@ fun PantallaContaminacionAgua(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "contaminacion_agua", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "contaminacion_agua", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -7670,9 +8354,23 @@ fun PantallaContaminacionSuelo(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "contaminacion_suelo")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "contaminacion_suelo"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -7746,20 +8444,35 @@ fun PantallaContaminacionSuelo(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "contaminacion_suelo",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "contaminacion_suelo",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "SANITARIO_ECOLOGICOS",
+                                                seleccion = "Contaminación del suelo"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "contaminacion_suelo",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "SANITARIO_ECOLOGICOS",
-                                            seleccion = "Contaminación del suelo"
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -7785,7 +8498,7 @@ fun PantallaContaminacionSuelo(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "contaminacion_suelo", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "contaminacion_suelo", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -7904,9 +8617,23 @@ fun PantallaPlagas(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "plagas")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "plagas"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -7980,20 +8707,35 @@ fun PantallaPlagas(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "plagas",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "plagas",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "SANITARIO_ECOLOGICOS",
+                                                seleccion = "Plagas"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "plagas",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "SANITARIO_ECOLOGICOS",
-                                            seleccion = "Plagas"
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -8019,7 +8761,7 @@ fun PantallaPlagas(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "plagas", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "plagas", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -8150,9 +8892,23 @@ fun PantallaEpidemias(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "epidemias")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "epidemias"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -8226,20 +8982,35 @@ fun PantallaEpidemias(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "epidemias",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "epidemias",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "SANITARIO_ECOLOGICOS",
+                                                seleccion = "Epidemias"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "epidemias",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "SANITARIO_ECOLOGICOS",
-                                            seleccion = "Epidemias"
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -8265,7 +9036,7 @@ fun PantallaEpidemias(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "epidemias", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "epidemias", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -8509,7 +9280,7 @@ fun PantallaRiesgosSocioOrganizativos(
 
     // ✅ Cargar datos guardados al iniciar la pantalla
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getSelections(ctx, "socioorg")
+        val saved = LocalStore.getSelections(ctx, "0000","socioorg")
         checkedList.clear()
         checkedList.addAll(opciones.map { it in saved })
     }
@@ -8618,7 +9389,7 @@ fun PantallaRiesgosSocioOrganizativos(
                         if (idx < checkedList.size) checkedList[idx] = checked
                         // ✅ Guardar en DataStore (solo aquí, no duplicado)
                         scope.launch {
-                            LocalStore.updateSelection(ctx, "socioorg", texto, checked)
+                            LocalStore.updateSelection(ctx, "0000","socioorg", texto, checked)
                         }
                     },
                     onClick = { onNavigate(texto) }
@@ -8787,9 +9558,23 @@ fun PantallaAccidentesCarreteros(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "accidentes")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "accidentes"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -8861,20 +9646,35 @@ fun PantallaAccidentesCarreteros(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "accidentes",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "accidentes",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "SOCIO_ORGANIZATIVOS",
+                                                seleccion = "Accidentes carreteros, ferroviarios y aéreos"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "accidentes",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "SOCIO_ORGANIZATIVOS",
-                                            seleccion = "Accidentes carreteros, ferroviarios y aéreos "
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -8900,7 +9700,7 @@ fun PantallaAccidentesCarreteros(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "accidentes", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "accidentes", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -8935,7 +9735,7 @@ fun PantallaAccidentesCarreteros(
             val links = listOf(
                 "Protección Civil" to "https://www.gob.mx/proteccion-civil",
                 "SSPC" to "https://www.gob.mx/sspc",
-                )
+            )
 
             links.forEach { (titulo, url) ->
                 Surface(
@@ -9014,9 +9814,23 @@ fun PantallaConcentracionPersonas(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "concentracionpersonas")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "concentracionpersonas"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -9088,20 +9902,35 @@ fun PantallaConcentracionPersonas(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "concentracionpersonas",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "concentracionpersonas",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "SOCIO_ORGANIZATIVOS",
+                                                seleccion = "Concentración masiva de personas"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "concentracionpersonas",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "SOCIO_ORGANIZATIVOS",
-                                            seleccion = "Concentración masivas de personas "
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -9127,7 +9956,7 @@ fun PantallaConcentracionPersonas(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "concentracionpersonas", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "concentracionpersonas", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -9247,9 +10076,23 @@ fun PantallaTerrorismoSabotaje(
 
     var identificaSi by remember { mutableStateOf(false) }
     var identificaNo by remember { mutableStateOf(false) }
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
-        val saved = LocalStore.getIdentificacion(ctx, "terrorismosabotaje")
+        val savedPostal = LocalStore.getPostalCode(ctx)
+        if (!savedPostal.isNullOrBlank()) {
+            postalCode = savedPostal
+            activity.codigoPostal = savedPostal
+
+        }
+        val saved = LocalStore.getIdentificacion(
+            context = ctx,
+            postalCode = postalCode,
+            fenomeno = "terrorismosabotaje"
+        )
+
         identificaSi = saved == "si"
         identificaNo = saved == "no"
     }
@@ -9321,20 +10164,35 @@ fun PantallaTerrorismoSabotaje(
                                 .weight(1f)
                                 .padding(end = 8.dp)
                                 .clickable {
+
+                                    if (postalCode.isBlank()) return@clickable
+
                                     identificaSi = !identificaSi
-                                    if (identificaSi) {
-                                        identificaNo = false
-                                        scope.launch {
+
+                                    scope.launch {
+                                        if (identificaSi) {
+                                            identificaNo = false
+
                                             LocalStore.saveIdentificacion(
-                                                ctx,
-                                                "terrorismosabotaje",
-                                                if (identificaSi) "si" else ""
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "terrorismosabotaje",
+                                                respuesta = "si"
+                                            )
+
+                                            activity.agregarDatos(
+                                                categoria = "SOCIO_ORGANIZATIVOS",
+                                                seleccion = "Terrorismo y sabotaje"
+                                            )
+
+                                        } else {
+                                            LocalStore.saveIdentificacion(
+                                                context = ctx,
+                                                postalCode = postalCode,
+                                                fenomeno = "terrorismosabotaje",
+                                                respuesta = ""
                                             )
                                         }
-                                        context.agregarDatos(
-                                            categoria = "SOCIO_ORGANIZATIVOS",
-                                            seleccion = "Terrorismo y sabotaje "
-                                        )
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -9360,7 +10218,7 @@ fun PantallaTerrorismoSabotaje(
                                     identificaNo = !identificaNo
                                     if (identificaNo) identificaSi = false
                                     scope.launch {
-                                        LocalStore.saveIdentificacion(ctx, "terrorismosabotaje", if (identificaNo) "no" else "")
+                                        LocalStore.saveIdentificacion(ctx,postalCode, "terrorismosabotaje", if (identificaNo) "no" else "")
                                     }
                                 },
                             shape = RoundedCornerShape(8.dp),
@@ -9611,6 +10469,7 @@ fun PantallaSopaLetrasGeologicos(
         opciones = listOf("Sismo", "Huracán", "Incendio forestal"),
         opcionCorrecta = 0 // "Sismo" es la opción correcta (índice 0)
     )
+
 }
 
 // --- Pantalla de Sopa de Letras para Fenómenos Hidrometeorológicos ---
@@ -9693,10 +10552,11 @@ fun PantallaSopaLetrasQuimicoTec(
         listOf('F','N','N','E','Ú','C','D','H','Ñ','C'),
         listOf('E','X','P','L','O','S','I','O','N','S'), // EXPLOSION
         listOf('I','N','C','E','N','D','I','O','S','Q'), // INCENDIOS
-        listOf('H','L','M','X','R','É','A','H','Ú','D'),
+        listOf('P','E','L','I','G','R','O','S','O','S'),  // PELIGROSOS
+        listOf('F','O','R','E','S','T','A','L','E','S'), //FORESTALES
         listOf('D','C','H','Q','J','A','J','L','K','I'),
         listOf('D','E','R','R','A','M','E','S','E','O'), // DERRAMES
-        listOf('P','E','L','I','G','R','O','S','O','S')  // PELIGROSOS
+        listOf('P','L','L','I','G','W','O','S','O','S')  // PELIGROSOS
     )
     val palabras = listOf(
         "DERRAMES", "FORESTALES", "FUGAS", "INCENDIOS", "PELIGROSOS", "RESIDUOS", "URBANOS", "EXPLOSION"
@@ -9725,13 +10585,13 @@ fun PantallaSopaLetrasSanitarioEcologico(
         listOf('S','U','E','L','O','V','S','Í','R','O'), // SUELO horizontal
         listOf('U','S','Z','L','D','H','U','S','É','C'),
         listOf('E','C','O','L','O','G','I','C','O','S'), // ECOLOGICOS horizontal
-        listOf('Ú','P','L','A','G','A','S','Y','L','O'),
+        listOf('Ú','P','L','A','G','A','S','Y','L','O'), //PLAGAS
         listOf('N','N','Q','M','T','G','X','C','E','G'),
-        listOf('S','A','N','I','T','A','R','I','O','G'),
-        listOf('M','O','N','A','I','R','E','Ñ','Q','O'),
-        listOf('E','P','I','D','E','M','I','A','S','S'),
-        listOf('Ñ','F','M','X','Ú','A','G','U','A','S'),
-        listOf('Y','Ü','P','Ñ','M','U','Í','S','K','L') // Última fila igual
+        listOf('S','A','N','I','T','A','R','I','O','G'),//SANITARIO
+        listOf('M','O','N','A','I','R','E','Ñ','Q','O'),//AIRE
+        listOf('E','P','I','D','E','M','I','A','S','S'),//EPIDEMIAS
+        listOf('Ñ','F','M','X','Ú','A','G','U','A','S'),//AGUA
+        listOf('Y','Ü','P','Ñ','M','U','Í','S','K','L')
 
     )
     val palabras = listOf(
@@ -9750,6 +10610,15 @@ fun PantallaSopaLetrasSanitarioEcologico(
     )
 }
 
+fun calcularEstadoSopa(
+    encontradas: Int,
+    total: Int
+): String = when {
+    encontradas == 0 -> "NO_EMPEZADA"
+    encontradas < total -> "INCONCLUSA"
+    else -> "COMPLETADA"
+}
+
 // --- Pantalla de Sopa de Letras para Químico-Tecnológicos ---
 @Composable
 fun SopaLetrasScreen(
@@ -9765,18 +10634,28 @@ fun SopaLetrasScreen(
 ) {
     val ctx = LocalContext.current
     val sopaLetrasViewModel: SopaLetrasViewModel = viewModel()
+    val activity = LocalContext.current as MainActivity
+    var postalCode by remember { mutableStateOf("") }
 
     // --- Estados principales ---
     val seleccion = remember { mutableStateListOf<Pair<Int, Int>>() }
     val encontradas = remember { mutableStateListOf<String>() }
     val posicionesEncontradas = remember { mutableStateListOf<List<Pair<Int, Int>>>() }
-    var inicio by remember { mutableStateOf<Pair<Int, Int>?>(null) }
-    var fin by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+
+    var mostrarFelicidades by remember { mutableStateOf(false) }
+
+    var actividadSopa by rememberSaveable { mutableStateOf("") }
+    var ultimoEstadoSopa by rememberSaveable { mutableStateOf<String?>(null) }
 
     var respuestaSeleccionada by remember { mutableStateOf<String?>(null) }
     var mostrarResultado by remember { mutableStateOf(false) }
 
-    var mostrarFelicidades by remember { mutableStateOf(false) }
+    var actividadPregunta by rememberSaveable { mutableStateOf("") }
+    var ultimaRespuestaGuardada by rememberSaveable { mutableStateOf<String?>(null) }
+
+    var section by rememberSaveable { mutableStateOf("") }
+    var inicio by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    var fin by remember { mutableStateOf<Pair<Int, Int>?>(null) }
 
     // --- Función auxiliar para encontrar palabra en la matriz ---
     fun buscarPalabraEnMatriz(palabra: String): List<Pair<Int, Int>>? {
@@ -9849,363 +10728,460 @@ fun SopaLetrasScreen(
 
     // --- Restaurar progreso guardado ---
     LaunchedEffect(Unit) {
-        val section = when (subtitulo.lowercase()) {
+
+        // --- Restaurar progreso guardado ---
+        postalCode = activity.codigoPostal ?: return@LaunchedEffect
+
+        section = when (subtitulo.lowercase()) {
             "fenómenos geológicos" -> "geologicos"
             "fenómenos hidrometeorológicos" -> "hidromet"
             "fenómenos químico-tecnológicos" -> "quimicotec"
             "fenómenos sanitario-ecológicos" -> "sanitarioeco"
             "fenómenos socio-organizativos" -> "socioorg"
-            else -> ""
+            else -> return@LaunchedEffect
         }
-        if (section.isNotEmpty()) {
-            val saved = LocalStore.getFoundWords(ctx, section)
-            saved.forEach { palabra ->
-                if (palabra in palabras && palabra !in encontradas) {
-                    encontradas.add(palabra)
-                    // Buscar las posiciones de esta palabra en la matriz
-                    val posiciones = buscarPalabraEnMatriz(palabra)
-                    if (posiciones != null) {
-                        posicionesEncontradas.add(posiciones)
-                    }
+
+        actividadSopa = when (subtitulo.lowercase()) {
+            "fenómenos geológicos" -> "SopaLetras geológicos"
+            "fenómenos hidrometeorológicos" -> "SopaLetras hidrometeorológicos"
+            "fenómenos químico-tecnológicos" -> "SopaLetras químico-tecnológicos"
+            "fenómenos sanitario-ecológicos" -> "SopaLetras sanitario-ecológicos"
+            "fenómenos socio-organizativos" -> "SopaLetras socio-organizativos"
+            else -> "SopaLetras desconocida"
+        }
+
+        actividadPregunta = when (subtitulo.lowercase()) {
+            "fenómenos geológicos" -> "Pregunta geológicos"
+            "fenómenos hidrometeorológicos" -> "Pregunta hidrometeorológicos"
+            "fenómenos químico-tecnológicos" -> "Pregunta químico-tecnológicos"
+            "fenómenos sanitario-ecológicos" -> "Pregunta sanitario-ecológicos"
+            "fenómenos socio-organizativos" -> "Pregunta socio-organizativos"
+            else -> "Pregunta desconocida"
+        }
+
+        val palabrasGuardadas =
+            LocalStore.getFoundWords(ctx, postalCode, section)
+
+        palabrasGuardadas.forEach { palabra ->
+            if (palabra in palabras && palabra !in encontradas) {
+                encontradas.add(palabra)
+                buscarPalabraEnMatriz(palabra)?.let {
+                    posicionesEncontradas.add(it)
                 }
             }
-            val ans = LocalStore.getAnswer(ctx, section)
-            if (ans != null && ans.isNotBlank()) {
-                respuestaSeleccionada = ans
-                mostrarResultado = true
-            }
+        }
+        val respuesta = LocalStore.getAnswer(ctx, postalCode, section)
+        if (!respuesta.isNullOrBlank()) {
+            respuestaSeleccionada = respuesta
+            mostrarResultado = true
         }
     }
 
-    // --- Detectar cuando se completan todas las palabras ---
     LaunchedEffect(encontradas.size) {
         if (encontradas.size == palabras.size && palabras.isNotEmpty()) {
             mostrarFelicidades = true
         }
     }
 
-    // --- Interfaz principal ---
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 42.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = titulo,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-        Text(
-            text = subtitulo,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 3.dp),
-            textAlign = TextAlign.Center
-        )
-        Text(
-            text = textoAdicional,
-            fontSize = 14.sp,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-            textAlign = TextAlign.Center
-        )
+    DisposableEffect(Unit) {
+        onDispose {
 
-        // --- Matriz interactiva ---
-        for ((i, fila) in matriz.withIndex()) {
-            Row {
-                for ((j, letra) in fila.withIndex()) {
-                    val pos = i to j
-                    val seleccionado = seleccion.contains(pos)
+            val estadoActual = calcularEstadoSopa(
+                encontradas = encontradas.size,
+                total = palabras.size
+            )
 
-                    // El subrayado ahora depende directamente de posicionesEncontradas
-                    val subrayado = posicionesEncontradas.any { lista -> pos in lista }
+            // 🚨 SOLO SI CAMBIÓ
+            if (estadoActual != ultimoEstadoSopa) {
 
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .background(
-                                when {
-                                    seleccionado -> Color(0xFF90CAF9)
-                                    subrayado -> Color(0xFF009ab9)
-                                    else -> MaterialTheme.colorScheme.surfaceVariant
-                                },
-                                RoundedCornerShape(4.dp)
-                            )
-                            .padding(2.dp)
-                            .pointerInput(Unit) {
-                                detectDragGestures(
-                                    onDragStart = {
-                                        inicio = pos
-                                        fin = pos
-                                        seleccion.clear()
-                                        seleccion.add(pos)
-                                    },
-                                    onDrag = { change, _ ->
-                                        if (inicio != null) {
-                                            val localPos = change.position
-                                            val cellSize = 62f
-                                            val j1 = (localPos.x / cellSize).toInt().coerceIn(0, matriz[0].size - 1)
-                                            val i1 = (localPos.y / cellSize).toInt().coerceIn(0, matriz.size - 1)
-                                            val (i0, j0) = inicio!!
-                                            val dx = j1 - j0
-                                            val dy = i1 - i0
-                                            val absDx = abs(dx)
-                                            val absDy = abs(dy)
-                                            val di: Int
-                                            val dj: Int
-                                            val len: Int
-                                            if (absDx > 0) {
-                                                di = 0
-                                                dj = if (dx > 0) 1 else -1
-                                                len = absDx + 1
-                                            } else if (absDy > 0) {
-                                                di = if (dy > 0) 1 else -1
-                                                dj = 0
-                                                len = absDy + 1
-                                            } else {
-                                                di = 0; dj = 0; len = 1
-                                            }
-                                            seleccion.clear()
-                                            for (k in 0 until len) {
-                                                val ni = i0 + k * di
-                                                val nj = j0 + k * dj
-                                                if (ni in matriz.indices && nj in matriz[0].indices) {
-                                                    seleccion.add(Pair(ni, nj))
-                                                }
-                                            }
-                                            fin = Pair(i0 + (len - 1) * di, j0 + (len - 1) * dj)
-                                        }
-                                    },
-                                    onDragEnd = {
-                                        val (palabra, posiciones) = palabraSeleccionadaYPosiciones()
-                                        if (palabra in palabras && palabra !in encontradas) {
-                                            encontradas.add(palabra)
-                                            posicionesEncontradas.add(posiciones)
-
-                                            val section = when (subtitulo.lowercase()) {
-                                                "fenómenos geológicos" -> "geologicos"
-                                                "fenómenos hidrometeorológicos" -> "hidromet"
-                                                "fenómenos químico-tecnológicos" -> "quimicotec"
-                                                "fenómenos sanitario-ecológicos" -> "sanitarioeco"
-                                                "fenómenos socio-organizativos" -> "socioorg"
-                                                else -> ""
-                                            }
-                                            if (section.isNotEmpty()) {
-                                                sopaLetrasViewModel.saveFoundWords(ctx, section, encontradas.toList())
-                                            }
-                                        }
-                                        seleccion.clear()
-                                    },
-                                    onDragCancel = { seleccion.clear() }
-                                )
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(text = letra.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(modifier = Modifier.size(2.dp))
-                }
-            }
-            Spacer(modifier = Modifier.height(2.dp))
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text("Lista de palabras:", fontWeight = FontWeight.SemiBold)
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            contentPadding = PaddingValues(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.height(80.dp)
-        ) {
-            items(palabras) { palabra ->
-                val tachada = palabra in encontradas
-                Text(
-                    text = palabra,
-                    fontSize = 16.sp,
-                    textDecoration = if (tachada) TextDecoration.LineThrough else TextDecoration.None,
-                    color = if (tachada) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
+                activity.agregarDatos(
+                    categoria = "ACTIVIDAD",
+                    actividad = actividadSopa,
+                    estado = estadoActual
                 )
+
+                ultimoEstadoSopa = estadoActual
             }
         }
-
-        // --- Contador ---
-        Text(
-            text = "Palabras encontradas: ${encontradas.size} de ${palabras.size}",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(top = 12.dp, bottom = 16.dp)
-        )
-
-        // --- Sección de pregunta ---
-        if (pregunta.isNotBlank() && opciones.isNotEmpty() && opcionCorrecta >= 0) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
-                    .padding(16.dp)
-            ) {
-                Column {
-                    Text(
-                        text = "Responde la siguiente pregunta de manera correcta.",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    Text(
-                        text = pregunta,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-                    opciones.forEach { opcion ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    respuestaSeleccionada = opcion
-                                    mostrarResultado = true
-
-                                    val section = when (subtitulo.lowercase()) {
-                                        "fenómenos geológicos" -> "geologicos"
-                                        "fenómenos hidrometeorológicos" -> "hidromet"
-                                        "fenómenos químico-tecnológicos" -> "quimicotec"
-                                        "fenómenos sanitario-ecológicos" -> "sanitarioeco"
-                                        "fenómenos socio-organizativos" -> "socioorg"
-                                        else -> ""
-                                    }
-                                    if (section.isNotEmpty()) {
-                                        sopaLetrasViewModel.saveAnswer(ctx, section, opcion)
-                                    }
-                                }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .background(
-                                        if (respuestaSeleccionada == opcion) MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.surfaceVariant,
-                                        RoundedCornerShape(10.dp)
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (respuestaSeleccionada == opcion)
-                                    Text("●", color = MaterialTheme.colorScheme.surface, fontSize = 12.sp)
-                            }
-                            Spacer(modifier = Modifier.padding(horizontal = 8.dp))
-                            Text(text = opcion, fontSize = 16.sp)
-                        }
-                    }
-
-                    if (mostrarResultado && respuestaSeleccionada != null) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        val esCorrecta = respuestaSeleccionada == opciones[opcionCorrecta]
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    if (esCorrecta) Color(0xFFE8F5E8) else Color(0xFFFFEBEE),
-                                    RoundedCornerShape(6.dp)
-                                )
-                                .padding(12.dp)
-                        ) {
-                            Text(
-                                text = if (esCorrecta) "¡Correcto!" else "Incorrecto. Intentalo de nuevo.",
-                                fontSize = 14.sp,
-                                color = if (esCorrecta) Color(0xFF2E7D32) else Color(0xFFD32F2F),
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        Button(onClick = onBack) { Text("Regresar") }
     }
-
-    // --- Modal de Felicidades (GIF intacto) ---
-    if (mostrarFelicidades) {
-        Box(
+        // --- Interfaz principal ---
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.5f))
-                .clickable { mostrarFelicidades = false },
-            contentAlignment = Alignment.Center
+                .padding(top = 42.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Surface(
+            Text(
+                text = titulo,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = subtitulo,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Medium,
                 modifier = Modifier
-                    .fillMaxWidth(0.8f)
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp)),
-                shape = RoundedCornerShape(16.dp),
-                shadowElevation = 8.dp,
-                color = MaterialTheme.colorScheme.surface
+                    .fillMaxWidth()
+                    .padding(bottom = 3.dp),
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = textoAdicional,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                textAlign = TextAlign.Center
+            )
+
+            // --- Matriz interactiva ---
+            for ((i, fila) in matriz.withIndex()) {
+                Row {
+                    for ((j, letra) in fila.withIndex()) {
+                        val pos = i to j
+                        val seleccionado = seleccion.contains(pos)
+
+                        // El subrayado ahora depende directamente de posicionesEncontradas
+                        val subrayado = posicionesEncontradas.any { lista -> pos in lista }
+
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .background(
+                                    when {
+                                        seleccionado -> Color(0xFF90CAF9)
+                                        subrayado -> Color(0xFF009ab9)
+                                        else -> MaterialTheme.colorScheme.surfaceVariant
+                                    },
+                                    RoundedCornerShape(4.dp)
+                                )
+                                .padding(2.dp)
+                                .pointerInput(Unit) {
+                                    detectDragGestures(
+                                        onDragStart = {
+                                            inicio = pos
+                                            fin = pos
+                                            seleccion.clear()
+                                            seleccion.add(pos)
+                                        },
+                                        onDrag = { change, _ ->
+                                            if (inicio != null) {
+                                                val localPos = change.position
+                                                val cellSize = 62f
+                                                val j1 = (localPos.x / cellSize).toInt()
+                                                    .coerceIn(0, matriz[0].size - 1)
+                                                val i1 = (localPos.y / cellSize).toInt()
+                                                    .coerceIn(0, matriz.size - 1)
+                                                val (i0, j0) = inicio!!
+                                                val dx = j1 - j0
+                                                val dy = i1 - i0
+                                                val absDx = abs(dx)
+                                                val absDy = abs(dy)
+                                                val di: Int
+                                                val dj: Int
+                                                val len: Int
+                                                if (absDx > 0) {
+                                                    di = 0
+                                                    dj = if (dx > 0) 1 else -1
+                                                    len = absDx + 1
+                                                } else if (absDy > 0) {
+                                                    di = if (dy > 0) 1 else -1
+                                                    dj = 0
+                                                    len = absDy + 1
+                                                } else {
+                                                    di = 0; dj = 0; len = 1
+                                                }
+                                                seleccion.clear()
+                                                for (k in 0 until len) {
+                                                    val ni = i0 + k * di
+                                                    val nj = j0 + k * dj
+                                                    if (ni in matriz.indices && nj in matriz[0].indices) {
+                                                        seleccion.add(Pair(ni, nj))
+                                                    }
+                                                }
+                                                fin = Pair(i0 + (len - 1) * di, j0 + (len - 1) * dj)
+                                            }
+                                        },
+                                        onDragEnd = {
+                                            val (palabra, posiciones) = palabraSeleccionadaYPosiciones()
+                                            if (palabra in palabras && palabra !in encontradas) {
+                                                encontradas.add(palabra)
+                                                posicionesEncontradas.add(posiciones)
+
+                                                val section = when (subtitulo.lowercase()) {
+                                                    "fenómenos geológicos" -> "geologicos"
+                                                    "fenómenos hidrometeorológicos" -> "hidromet"
+                                                    "fenómenos químico-tecnológicos" -> "quimicotec"
+                                                    "fenómenos sanitario-ecológicos" -> "sanitarioeco"
+                                                    "fenómenos socio-organizativos" -> "socioorg"
+                                                    else -> ""
+                                                }
+                                                if (section.isNotEmpty()) {
+                                                    sopaLetrasViewModel.saveFoundWords(
+                                                        ctx,
+                                                        postalCode,
+                                                        section,
+                                                        encontradas.toList()
+                                                    )
+                                                }
+                                            }
+                                            seleccion.clear()
+                                        },
+                                        onDragCancel = { seleccion.clear() }
+                                    )
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = letra.toString(),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.size(2.dp))
+                    }
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text("Lista de palabras:", fontWeight = FontWeight.SemiBold)
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
+                contentPadding = PaddingValues(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.height(80.dp)
             ) {
-                Column(
+                items(palabras) { palabra ->
+                    val tachada = palabra in encontradas
+                    Text(
+                        text = palabra,
+                        fontSize = 16.sp,
+                        textDecoration = if (tachada) TextDecoration.LineThrough else TextDecoration.None,
+                        color = if (tachada) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+            // --- Contador ---
+            Text(
+                text = "Palabras encontradas: ${encontradas.size} de ${palabras.size}",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = 12.dp, bottom = 16.dp)
+            )
+
+            // --- Sección de pregunta ---
+            if (pregunta.isNotBlank() && opciones.isNotEmpty() && opcionCorrecta >= 0) {
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            RoundedCornerShape(8.dp)
+                        )
+                        .padding(16.dp)
                 ) {
-                    Text(
-                        text = "¡FELICIDADES!",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        textAlign = TextAlign.Center
-                    )
+                    Column {
+                        Text(
+                            text = "Responde la siguiente pregunta de manera correcta.",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        Text(
+                            text = pregunta,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
 
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Completaste la sopa de letras.",
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+                        opciones.forEach { opcion ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
 
-                    val imageLoader = coil.ImageLoader.Builder(LocalContext.current)
-                        .components {
-                            add(coil.decode.GifDecoder.Factory())
+                                        // 🔹 Evitar re-guardar la misma respuesta
+                                        if (respuestaSeleccionada == opcion) return@clickable
+
+                                        respuestaSeleccionada = opcion
+                                        mostrarResultado = true
+
+                                        val esCorrecta = opcion == opciones[opcionCorrecta]
+                                        val estado = if (esCorrecta) "Correcta" else "Incorrecta"
+
+                                        // 🔹 Guardar en LocalStore (MEMORIA)
+                                        sopaLetrasViewModel.saveAnswer(
+                                            context = ctx,
+                                            postalCode = postalCode,
+                                            section = section,   // ✅ CORRECTO
+                                            answer = opcion
+                                        )
+
+                                        // 🔹 Guardar palabras encontradas
+                                        sopaLetrasViewModel.saveFoundWords(
+                                            context = ctx,
+                                            postalCode = postalCode,
+                                            section = section,
+                                            words = encontradas.toList()
+                                        )
+
+                                        // 🔹 Enviar a BD solo si cambió
+                                        if (ultimaRespuestaGuardada != opcion) {
+                                            activity.agregarDatos(
+                                                categoria = "ACTIVIDAD",
+                                                actividad = actividadPregunta,
+                                                estado = estado
+                                            )
+                                            ultimaRespuestaGuardada = opcion
+                                        }
+                                    }
+                                    .padding(vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .background(
+                                            if (respuestaSeleccionada == opcion)
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.surfaceVariant,
+                                            RoundedCornerShape(10.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (respuestaSeleccionada == opcion) {
+                                        Text(
+                                            "●",
+                                            color = MaterialTheme.colorScheme.surface,
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                Text(text = opcion, fontSize = 16.sp)
+                            }
                         }
-                        .build()
 
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data("android.resource://${LocalContext.current.packageName}/${R.raw.felicidades}")
-                            .crossfade(true)
-                            .build(),
-                        imageLoader = imageLoader,
-                        contentDescription = "Felicidades GIF",
+                        if (mostrarResultado && respuestaSeleccionada != null) {
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            val esCorrecta = respuestaSeleccionada == opciones[opcionCorrecta]
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        if (esCorrecta) Color(0xFFE8F5E8)
+                                        else Color(0xFFFFEBEE),
+                                        RoundedCornerShape(6.dp)
+                                    )
+                                    .padding(12.dp)
+                            ) {
+                                Text(
+                                    text = if (esCorrecta)
+                                        "¡Correcto!"
+                                    else
+                                        "Incorrecto. Inténtalo de nuevo.",
+                                    fontSize = 14.sp,
+                                    color = if (esCorrecta)
+                                        Color(0xFF2E7D32)
+                                    else
+                                        Color(0xFFD32F2F),
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            Button(onClick = onBack) { Text("Regresar") }
+        }
+
+        // --- Modal de Felicidades (GIF intacto) ---
+        if (mostrarFelicidades) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable { mostrarFelicidades = false },
+                contentAlignment = Alignment.Center
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp)),
+                    shape = RoundedCornerShape(16.dp),
+                    shadowElevation = 8.dp,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(150.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Fit
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = { mostrarFelicidades = false },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Continuar", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = "¡FELICIDADES!",
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Completaste la sopa de letras.",
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        val imageLoader = ImageLoader.Builder(LocalContext.current)
+                            .components {
+                                add(GifDecoder.Factory())
+                            }
+                            .build()
+
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data("android.resource://${LocalContext.current.packageName}/${R.raw.felicidades}")
+                                .crossfade(true)
+                                .build(),
+                            imageLoader = imageLoader,
+                            contentDescription = "Felicidades GIF",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(150.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Fit
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { mostrarFelicidades = false },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Text("Continuar", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
         }
     }
-}

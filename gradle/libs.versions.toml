@@ -1,5 +1,5 @@
 [versions]
-agp = "8.13.0"
+agp = "8.13.2"
 kotlin = "2.0.21"
 coreKtx = "1.10.1"
 junit = "4.13.2"
@@ -12,7 +12,8 @@ composeBom = "2024.09.00"
 generativeai = "0.9.0"
 googleAndroidLibrariesMapsplatformSecretsGradlePlugin = "2.0.1"
 datastore = "1.0.0"
-volley = "1.2.1" # <--- ¡Agrega esta línea!
+volley = "1.2.1"
+runtimeSaveable = "1.10.0" # <--- ¡Agrega esta línea!
 
 
 [libraries]
@@ -33,7 +34,8 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 generativeai = { group = "com.google.ai.client.generativeai", name = "generativeai", version.ref = "generativeai" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
-volley = { group = "com.android.volley", name = "volley", version.ref = "volley" } # <--- ¡Agrega esta línea!
+volley = { group = "com.android.volley", name = "volley", version.ref = "volley" }
+androidx-compose-runtime-saveable = { group = "androidx.compose.runtime", name = "runtime-saveable", version.ref = "runtimeSaveable" } # <--- ¡Agrega esta línea!
 
 
 [plugins]

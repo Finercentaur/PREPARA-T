@@ -19,10 +19,20 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "pr
 object LocalStore {
     // 🔑 Claves de DataStore
     private val KEY_POSTAL = stringPreferencesKey("postal_code")
-    private fun selectionKey(section: String) = stringPreferencesKey("selections_$section")
-    private fun wordsKey(section: String) = stringPreferencesKey("sopa_words_$section")
-    private fun answerKey(section: String) = stringPreferencesKey("sopa_answer_$section")
-    private fun identificacionKey(fenomeno: String) = stringPreferencesKey("identificacion_$fenomeno")
+
+    // Guarda la seleccion en el mismo dispositivo para cada CP registrado
+    private fun selectionKey(section: String, postalCode: String): Preferences.Key<String> {
+        return stringPreferencesKey("selections_${postalCode}_$section")
+    }
+    private fun wordsKey(section: String, postalCode: String): Preferences.Key<String> {
+        return stringPreferencesKey("sopa_words_${postalCode}_$section")
+    }
+    private fun answerKey(section: String, postalCode: String): Preferences.Key<String> {
+        return stringPreferencesKey("sopa_answer_${postalCode}_$section")
+    }
+    private fun identificacionKey(fenomeno: String, postalCode: String): Preferences.Key<String> {
+        return stringPreferencesKey("identificacion_${postalCode}_$fenomeno")
+    }
 
     //  Constantes para las secciones válidas
     object Sections {
@@ -69,11 +79,11 @@ object LocalStore {
     // ----------------------
     // 📌 Selections (checkbox / opciones)
     // ----------------------
-    suspend fun updateSelection(context: Context, section: String, option: String, checked: Boolean) {
+    suspend fun updateSelection(context: Context, postalCode: String, section: String, option: String, checked: Boolean) {
         if (section.isBlank() || option.isBlank()) return
 
         try {
-            val key = selectionKey(section)
+            val key = selectionKey(section, postalCode)
             val current = (context.dataStore.data.first()[key] ?: "")
                 .split(',')
                 .map { it.trim() }
@@ -92,11 +102,11 @@ object LocalStore {
         }
     }
 
-    suspend fun getSelections(context: Context, section: String): Set<String> {
-        if (section.isBlank()) return emptySet()
+    suspend fun getSelections(context: Context, postalCode: String, section: String): Set<String> {
+        if (section.isBlank() || postalCode.isBlank()) return emptySet()
 
         return try {
-            val key = selectionKey(section)
+            val key = selectionKey(section, postalCode)
             val raw = context.dataStore.data.first()[key] ?: ""
             raw.split(',')
                 .map { it.trim() }
@@ -108,9 +118,9 @@ object LocalStore {
     }
 
     // Función para borrar todas las selecciones de una sección
-    suspend fun clearSelections(context: Context, section: String) {
+    suspend fun clearSelections(context: Context, postalCode: String, section: String) {
         try {
-            val key = selectionKey(section)
+            val key = selectionKey(section, postalCode)
             context.dataStore.edit { it.remove(key) }
         } catch (e: Exception) {
             throw LocalStoreException("Error clearing selections for section $section: ${e.message}")
@@ -120,11 +130,11 @@ object LocalStore {
     // ----------------------
     // 📌 Palabras encontradas en la sopa
     // ----------------------
-    suspend fun setFoundWords(context: Context, section: String, words: List<String>) {
-        if (section.isBlank()) return
+    suspend fun setFoundWords(context: Context, postalCode: String, section: String, words: List<String>) {
+        if (section.isBlank() ) return
 
         try {
-            val key = wordsKey(section)
+            val key = wordsKey(section,postalCode)
             val cleanWords = words.map { it.trim() }.filter { it.isNotEmpty() }
             context.dataStore.edit { it[key] = cleanWords.joinToString(",") }
         } catch (e: Exception) {
@@ -132,11 +142,11 @@ object LocalStore {
         }
     }
 
-    suspend fun getFoundWords(context: Context, section: String): Set<String> {
-        if (section.isBlank()) return emptySet()
+    suspend fun getFoundWords(context: Context, postalCode: String, section: String): Set<String> {
+        if (section.isBlank() ) return emptySet()
 
         return try {
-            val key = wordsKey(section)
+            val key = wordsKey(section,postalCode)
             val raw = context.dataStore.data.first()[key] ?: ""
             raw.split(',')
                 .map { it.trim() }
@@ -150,22 +160,22 @@ object LocalStore {
     // ----------------------
     // 📌 Respuestas en sopa
     // ----------------------
-    suspend fun setAnswer(context: Context, section: String, answer: String) {
-        if (section.isBlank()) return
+    suspend fun setAnswer(context: Context, postalCode: String, section: String, answer: String) {
+        if (section.isBlank() ) return
 
         try {
-            val key = answerKey(section)
+            val key = answerKey(section,postalCode)
             context.dataStore.edit { it[key] = answer.trim() }
         } catch (e: Exception) {
             throw LocalStoreException("Error saving answer for section $section: ${e.message}")
         }
     }
 
-    suspend fun getAnswer(context: Context, section: String): String? {
-        if (section.isBlank()) return null
+    suspend fun getAnswer(context: Context, postalCode: String,  section: String): String? {
+        if (section.isBlank() ) return null
 
         return try {
-            val key = answerKey(section)
+            val key = answerKey(section,postalCode)
             context.dataStore.data.first()[key]
         } catch (e: Exception) {
             null
@@ -175,11 +185,11 @@ object LocalStore {
     // ----------------------
     // 📌 Identificación de fenómenos (NUEVO)
     // ----------------------
-    suspend fun saveIdentificacion(context: Context, fenomeno: String, respuesta: String) {
-        if (fenomeno.isBlank()) return
+    suspend fun saveIdentificacion(context: Context, postalCode: String, fenomeno: String, respuesta: String) {
+        if (fenomeno.isBlank() || postalCode.isBlank()) return
 
         try {
-            val key = identificacionKey(fenomeno)
+            val key = identificacionKey(fenomeno,postalCode)
             context.dataStore.edit { preferences ->
                 preferences[key] = respuesta.trim()
             }
@@ -188,22 +198,21 @@ object LocalStore {
         }
     }
 
-    suspend fun getIdentificacion(context: Context, fenomeno: String): String {
-        if (fenomeno.isBlank()) return ""
+    suspend fun getIdentificacion(context: Context, postalCode: String, fenomeno: String): String {
+        if (fenomeno.isBlank() || postalCode.isBlank()) return ""
 
         return try {
-            val key = identificacionKey(fenomeno)
-            val preferences = context.dataStore.data.first()
-            preferences[key] ?: ""
+            val key = identificacionKey(fenomeno, postalCode)
+            return context.dataStore.data.first()[key] ?: ""
         } catch (e: Exception) {
             ""
         }
     }
 
     //  Limpiar identificación de un fenómeno
-    suspend fun clearIdentificacion(context: Context, fenomeno: String) {
+    suspend fun clearIdentificacion(context: Context, postalCode: String, fenomeno: String) {
         try {
-            val key = identificacionKey(fenomeno)
+            val key = identificacionKey(fenomeno,postalCode)
             context.dataStore.edit { it.remove(key) }
         } catch (e: Exception) {
             throw LocalStoreException("Error clearing identificacion for fenomeno $fenomeno: ${e.message}")
@@ -213,28 +222,28 @@ object LocalStore {
     // ----------------------
     // 📌 Funciones de utilidad
     // ----------------------
-    suspend fun hasAnySelections(context: Context, section: String): Boolean {
-        return getSelections(context, section).isNotEmpty()
+    suspend fun hasAnySelections(context: Context, postalCode: String, section: String): Boolean {
+        return getSelections(context,postalCode, section).isNotEmpty()
     }
 
-    suspend fun getSelectionCount(context: Context, section: String): Int {
-        return getSelections(context, section).size
+    suspend fun getSelectionCount(context: Context, postalCode: String, section: String): Int {
+        return getSelections(context,postalCode, section).size
     }
 
     //  Verificar si los datos están completos para una sección
-    suspend fun isSectionComplete(context: Context, section: String): Boolean {
-        val hasSelections = hasAnySelections(context, section)
-        val hasAnswer = !getAnswer(context, section).isNullOrBlank()
-        val hasFoundWords = getFoundWords(context, section).isNotEmpty()
+    suspend fun isSectionComplete(context: Context, postalCode: String, section: String): Boolean {
+        val hasSelections = hasAnySelections(context,postalCode, section)
+        val hasAnswer = !getAnswer(context,postalCode, section).isNullOrBlank()
+        val hasFoundWords = getFoundWords(context,postalCode, section).isNotEmpty()
 
         return hasSelections && (hasAnswer || hasFoundWords)
     }
 
     //  Contar identificaciones completadas
-    suspend fun getIdentificacionesCount(context: Context): Int {
+    suspend fun getIdentificacionesCount(context: Context, postalCode: String): Int {
         return try {
             Fenomenos.ALL.count { fenomeno ->
-                getIdentificacion(context, fenomeno).isNotEmpty()
+                getIdentificacion(context,postalCode, fenomeno).isNotEmpty()
             }
         } catch (e: Exception) {
             0
@@ -244,7 +253,7 @@ object LocalStore {
     // ----------------------
     // 📌 Exportar todo a JSON (mejorado)
     // ----------------------
-    suspend fun exportAll(context: Context): File {
+    suspend fun exportAll(context: Context, postalCode: String): File {
         return try {
             val root = JSONObject()
 
@@ -260,28 +269,28 @@ object LocalStore {
             var totalSelections = 0
 
             for (section in Sections.ALL) {
-                val sectionSelections = getSelections(context, section)
+                val sectionSelections = getSelections(context,postalCode, section)
                 selections.put(section, sectionSelections.joinToString(","))
                 totalSelections += sectionSelections.size
 
                 val prog = JSONObject()
-                prog.put("found", getFoundWords(context, section).joinToString(","))
-                prog.put("answer", getAnswer(context, section) ?: "")
-                prog.put("is_complete", isSectionComplete(context, section))
+                prog.put("found", getFoundWords(context,postalCode, section).joinToString(","))
+                prog.put("answer", getAnswer(context,postalCode, section) ?: "")
+                prog.put("is_complete", isSectionComplete(context,postalCode, section))
 
                 sopa.put(section, prog)
             }
 
             // Identificaciones de fenómenos
             for (fenomeno in Fenomenos.ALL) {
-                identificaciones.put(fenomeno, getIdentificacion(context, fenomeno))
+                identificaciones.put(fenomeno, getIdentificacion(context,postalCode, fenomeno))
             }
 
             root.put("selections", selections)
             root.put("sopa_progress", sopa)
             root.put("identificaciones", identificaciones)
             root.put("total_selections", totalSelections)
-            root.put("total_identificaciones", getIdentificacionesCount(context))
+            root.put("total_identificaciones", getIdentificacionesCount(context,postalCode))
 
             // Guardar en archivo con mejor nomenclatura
             val dir = context.getExternalFilesDir(null) ?: context.filesDir
@@ -297,7 +306,7 @@ object LocalStore {
     }
 
     //  Función para importar datos (mejorada)
-    suspend fun importFromFile(context: Context, file: File) {
+    suspend fun importFromFile(context: Context, postalCode: String, file: File) {
         try {
             val jsonString = file.readText()
             val root = JSONObject(jsonString)
@@ -314,11 +323,11 @@ object LocalStore {
                     if (selections.has(section)) {
                         val sectionData = selections.getString(section)
                         // Limpiar sección actual
-                        clearSelections(context, section)
+                        clearSelections(context,postalCode, section)
                         // Importar nuevas selecciones
                         sectionData.split(",").forEach { option ->
                             if (option.trim().isNotEmpty()) {
-                                updateSelection(context, section, option.trim(), true)
+                                updateSelection(context,postalCode, section, option.trim(), true)
                             }
                         }
                     }
@@ -332,7 +341,7 @@ object LocalStore {
                     if (identificaciones.has(fenomeno)) {
                         val respuesta = identificaciones.getString(fenomeno)
                         if (respuesta.isNotEmpty()) {
-                            saveIdentificacion(context, fenomeno, respuesta)
+                            saveIdentificacion(context,postalCode, fenomeno, respuesta)
                         }
                     }
                 }

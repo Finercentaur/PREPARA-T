@@ -6,15 +6,47 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 
 class SopaLetrasViewModel : ViewModel() {
-    fun saveFoundWords(context: Context, section: String, words: List<String>) {
+
+
+    fun saveFoundWords(context: Context, postalCode: String, section: String, words: List<String>) {
+        if (postalCode.isBlank()) return
+
         viewModelScope.launch {
-            LocalStore.setFoundWords(context, section, words)
+            LocalStore.setFoundWords(
+                context = context,
+                postalCode = postalCode,
+                section = section,
+                words = words
+            )
         }
     }
 
-    fun saveAnswer(context: Context, section: String, answer: String) {
+    fun saveAnswer(context: Context, postalCode: String, section: String, answer: String) {
+        if (postalCode.isBlank()) return
+
         viewModelScope.launch {
-            LocalStore.setAnswer(context, section, answer)
+            LocalStore.setAnswer(
+                context = context,
+                postalCode = postalCode,
+                section = section,
+                answer = answer
+            )
         }
     }
+
+    fun loadSopaState(
+        context: Context,
+        postalCode: String,
+        section: String,
+        onResult: (Set<String>, String?) -> Unit
+    ) {
+        if (postalCode.isBlank()) return
+
+        viewModelScope.launch {
+            val words = LocalStore.getFoundWords(context, postalCode, section)
+            val answer = LocalStore.getAnswer(context, postalCode, section)
+            onResult(words, answer)
+        }
+    }
+
 }
